@@ -3,6 +3,7 @@ PLAN DU PROJET C++:
 
 constructeur+ destructeur -> methode new/delete (allocation dynamique).
 
+//add skeleton diagram (relation between classes)
 LES CLASSES :
 personne(int age, string nom) : client(string CIN), staff(string poste, double salaire)
 
@@ -37,12 +38,12 @@ https://chatgpt.com/share/692845e5-b540-8008-96b6-766ec899ebab
 =================================================================
 // using switchcase
 
-squelette :
+
 Gestion d'hotelerie
 username
 password
 welcome $user
------ MENU CLIENT -----
+----- MENU CLIENT ----- //to fix : detailing / adding descriptive comments
 [1] Faire une réservation
 [2] Afficher les infos de réservation
 [3] Modifier une réservation
