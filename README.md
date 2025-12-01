@@ -4,10 +4,21 @@ PLAN DU PROJET C++:
 constructeur+ destructeur -> methode new/delete (allocation dynamique).
 
 LES CLASSES :
-personne : client, staff 
-chambre : ChambreSimple, doublee, suite 
-hotel 
-reservation
+personne(int age, string nom) : client(string CIN), staff(string poste, double salaire)
+
+
+chambre (int numero,bool estOccupe,double prixBase):ChambreSimple(double pourcentage), doublee(double pourcentage), suite(double pourcentage)
+
+
+// class pour stocker et gérer toutes les données du système
+hotel (
+vector<Chambre*> chambres
+vector<Client> clients
+vector<Employe> employes
+vector<Reservation> reservations)
+
+
+reservation(int idReservation,Client client,Chambre* chambre,string dateDebut,string dateFin,double prixTotal)
 
 methodes:
 getfromfile();
