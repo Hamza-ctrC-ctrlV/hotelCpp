@@ -1,10 +1,10 @@
 #include <iostream>
 using namespace std;
 
-
 class hotel {};
 class reservation {};
-class chambre{
+
+class Chambre {
 protected:
     int numero;
     bool estOccupe;
@@ -25,14 +25,14 @@ public:
 };
 
 class ChambreSimple : public Chambre {
-    private:
+private:
     double singpercentage;
 public:
-    ChambreSimple(int num, double prixBase)
-        : Chambre(num, prixBase),singpercentage(sing) {}
+    ChambreSimple(int num, double prixBase, double perc)
+        : Chambre(num, prixBase), singpercentage(perc) {} 
 
     double calculerPrix() const override {
-        return prixBase * (1 + singpercentage/100);  
+        return prixBase * (1 + singpercentage / 100);
     }
 
     void afficher() const override {
@@ -42,16 +42,15 @@ public:
     }
 };
 
-
-class doublee : public chambre {class ChambreSimple : public Chambre {
-    private:
+class doublee : public Chambre {
+private:
     double doublepercentage;
 public:
-    ChambreSimple(int num, double prixBase)
-        : Chambre(num, prixBase),doublepercentage(doub) {}
+    doublee(int num, double prixBase, double perc)
+        : Chambre(num, prixBase), doublepercentage(perc) {}  
 
     double calculerPrix() const override {
-        return prixBase * (1 + doublepercentage/100);  
+        return prixBase * (1 + doublepercentage / 100);
     }
 
     void afficher() const override {
@@ -59,30 +58,28 @@ public:
         Chambre::afficher();
         cout << " | Prix Final: " << calculerPrix() << endl;
     }
-};};
+};
 
-
-class suite : public chambre {class ChambreSimple : public Chambre {
-    private:
+class suite : public Chambre {
+private:
     double suitpercentage;
 public:
-    ChambreSimple(int num, double prixBase)
-        : Chambre(num, prixBase),suitpercentage(suit) {}
+    suite(int num, double prixBase, double perc)
+        : Chambre(num, prixBase), suitpercentage(perc) {}  
 
     double calculerPrix() const override {
-        return prixBase * (1 + suitpercentage/100);  
+        return prixBase * (1 + suitpercentage / 100);
     }
 
     void afficher() const override {
-        cout << "[Chambre suit] ";
+        cout << "[Chambre suite] ";
         Chambre::afficher();
         cout << " | Prix Final: " << calculerPrix() << endl;
     }
-};};
+};
 
-class personnes{};
+class personnes {};
 class client : public personnes {};
 class employe : public personnes {};
 
-int main (){}
-
+int main() {}
