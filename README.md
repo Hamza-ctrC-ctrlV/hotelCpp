@@ -28,7 +28,7 @@ afficher();
 afficher_liste_des_chambre()
 
 libraries :
-include <chrono>; (to calculate the number of nights between 2 dates)
+include <chrono>; (pour calculer les nombres de nuit entre deux dates )
 
 support:
 
