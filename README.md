@@ -14,7 +14,7 @@ getfromfile();
 loadfromfile();
 facture();
 afficher();
-afficherlistedeschambre()
+afficher_liste_des_chambre()
 
 libraries :
 include <chrono>; (to calculate the number of nights between 2 dates)
