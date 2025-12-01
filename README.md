@@ -18,7 +18,7 @@ vector<Employe> employes
 vector<Reservation> reservations)
 
 
-reservation(int idReservation,Client client,Chambre* chambre,string dateDebut,string dateFin,double prixTotal)
+reservation(int idReservation,string client,Chambre* chambre,string dateDebut,string dateFin,double prixTotal)
 
 methodes:
 getfromfile();
