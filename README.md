@@ -35,9 +35,6 @@ afficher_liste_des_chambre()
 libraries :
 include <chrono>; (pour calculer les nombres de nuit entre deux dates )
 
-support:
-
-https://chatgpt.com/share/692845e5-b540-8008-96b6-766ec899ebab
 
 =================================================================
 
