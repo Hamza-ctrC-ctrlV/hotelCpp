@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <sstream> // // lib bach n9lb klma ar9am w l3ks (5<->"5")
 #include <ctime>
+#include <fstream>
 using namespace std;
 
 //Classes Personne, Client, Staff
@@ -26,11 +27,11 @@ public:
             << " | CIN: " << cin
             << " | Tel: " << telephone;
     }
-    //surcharge bach tsma dkhlna dakchi li kan9raw hh 
+    //surcharge bach tsma dkhlna dakchi li kan9raw hh
     bool operator==(const Personne& autre) const {
         return cin == autre.cin;
     }
-    //ta hna nfs l7aja 
+    //ta hna nfs l7aja
     friend ostream& operator<<(ostream& os, const Personne& p) {
         os << p.nom << " " << p.prenom << " (CIN: " << p.cin << ")";
         return os;
@@ -70,6 +71,32 @@ public:
     }
 
     int getNumeroClient() const { return numeroClient; }
+
+    // Convertit les données du client en format texte pour sauvegarde dans fichier
+    // Format: NumeroClient|Nom|Prenom|CIN|Telephone
+    string toFileString() const {
+        return to_string(numeroClient) + "|" + getNom() + "|" + 
+               getPrenom() + "|" + getCin() + "|" + getTelephone();
+    }
+
+    // Crée un objet Client à partir d'une ligne de fichier
+    // Met à jour le compteur statique pour éviter les conflits d'ID lors de la création de nouveaux clients
+    static shared_ptr<Client> fromFileString(const string& line) {
+        stringstream ss(line);
+        string numStr, nom, prenom, cin, tel;
+        getline(ss, numStr, '|');
+        getline(ss, nom, '|');
+        getline(ss, prenom, '|');
+        getline(ss, cin, '|');
+        getline(ss, tel, '|');
+
+        auto client = make_shared<Client>(nom, prenom, cin, tel);
+        // Met à jour le compteur pour éviter les conflits d'ID
+        if (stoi(numStr) > compteurClients) {
+            compteurClients = stoi(numStr);
+        }
+        return client;
+    }
 };
 
 int Client::compteurClients = 0;
@@ -99,11 +126,36 @@ public:
     bool verifierMotDePasse(string mdp) const {
         return motDePasse == mdp;
     }
+
+    string toFileString() const {
+        return to_string(idStaff) + "|" + getNom() + "|" + 
+               getPrenom() + "|" + getCin() + "|" + getTelephone() + "|" + 
+               poste + "|" + motDePasse;
+    }
+
+    static shared_ptr<Staff> fromFileString(const string& line) {
+        stringstream ss(line);
+        string idStr, nom, prenom, cin, tel, post, mdp;
+        getline(ss, idStr, '|');
+        getline(ss, nom, '|');
+        getline(ss, prenom, '|');
+        getline(ss, cin, '|');
+        getline(ss, tel, '|');
+        getline(ss, post, '|');
+        getline(ss, mdp, '|');
+
+        auto staff = make_shared<Staff>(nom, prenom, cin, tel, post, mdp);
+        // Set the counter to the loaded number to avoid conflicts
+        if (stoi(idStr) > compteurStaff) {
+            compteurStaff = stoi(idStr);
+        }
+        return staff;
+    }
 };
-// ta hadi b7al d reservation gha n7tajoha mn b3d 
+// ta hadi b7al d reservation n9dro n7tajoha mn b3d dakchi lach khlitha
 int Staff::compteurStaff = 0;
 
-// fonction bach n7sbo lyali 
+// fonction bach n7sb lyali
 
 int calculerNombreJours(const string& dateDebut, const string& dateFin) {
     int jour1, mois1, annee1;
@@ -177,9 +229,17 @@ public:
     void setPourcentage(double pourcentage) { this->pourcentage = pourcentage; }
     void setOccupe(bool occupe) { this->estOccupee = occupe; }
 
+    // Convertit les données de la chambre en format texte pour sauvegarde dans fichier
+    // Format: Type|Numero|PrixBase|Pourcentage|EstOccupee (0 ou 1)
+    string toFileString() const {
+        return getNomType() + "|" + to_string(numero) + "|" + 
+               to_string(prixbase) + "|" + to_string(pourcentage) + "|" + 
+               (estOccupee ? "1" : "0");
+    }
+
     virtual ~Chambre() {}
 };
-//prix base khlito hard coded bach nshl 3liya hh (3gzt)
+
 class ChambreSingle : public Chambre {
 public:
     ChambreSingle(int numero, float prixbase = 300.0, double pourcentage = 0.0, bool estOccupee = false)
@@ -292,6 +352,36 @@ public:
     void setNumeroChambre(int num) { numeroChambre = num; }
     void setNombreJours(int jours) { nombreJours = jours; }
     void setPrixTotal(double prix) { prixTotal = prix; }
+    
+    // Convertit les données de la réservation en format texte pour sauvegarde dans fichier
+    // Format: NumeroReservation|CINClient|NumeroChambre|DateDebut|DateFin|NombreJours|PrixTotal
+    string toFileString() const {
+        return to_string(numeroReservation) + "|" + cinClient + "|" +
+            to_string(numeroChambre) + "|" + dateDebut + "|" + dateFin + "|" +
+            to_string(nombreJours) + "|" + to_string(prixTotal);
+    }
+
+    // Crée un objet Reservation à partir d'une ligne de fichier
+    static shared_ptr<Reservation> fromFileString(const string& line) {
+        stringstream ss(line);
+        string numStr, cin, numChStr, debut, fin, joursStr, prixStr;
+        getline(ss, numStr, '|');
+        getline(ss, cin, '|');
+        getline(ss, numChStr, '|');
+        getline(ss, debut, '|');
+        getline(ss, fin, '|');
+        getline(ss, joursStr, '|');
+        getline(ss, prixStr, '|');
+
+        return make_shared<Reservation>(
+            cin,
+            stoi(numChStr),
+            debut,
+            fin,
+            stoi(joursStr),
+            stod(prixStr)
+        );
+    }
 };
 
 //hadi katb9a t incrementa bach ykon 3dna id d kol reservation (chof constructeur bach tfhm)
@@ -305,14 +395,31 @@ private:
     vector<shared_ptr<Staff>> staffMembers;
     vector<shared_ptr<Client>> clients;
     vector<shared_ptr<Reservation>> reservations;
+    // Noms des fichiers pour la persistance des données
+    const string FICHIER_RESERVATIONS = "reservations.txt";
+    const string FICHIER_CHAMBRES = "chambres.txt";
+    const string FICHIER_CLIENTS = "clients.txt";
 
 public:
     Hotel() {
-        initialiserDonnees();
+        // Charge les données depuis les fichiers au démarrage
+        chargerChambres();
+        chargerClients();
+        chargerReservations();
+        
+        // Si les fichiers n'existent pas, initialise les données par défaut
+        if (chambres.empty()) {
+            initialiserDonnees();
+            sauvegarderChambres(); // Sauvegarde les chambres initiales
+        }
+        // Le staff est toujours initialisé en mémoire (pas sauvegardé dans fichier)
+        if (staffMembers.empty()) {
+            initialiserDonnees();
+        }
     }
 
     void initialiserDonnees() {
-        // Initial dyal staff 
+        // Initial dyal staff
         staffMembers.push_back(make_shared<Staff>("Med", "Hamza", "ADMIN001",
             "060000000", "chef li chaf kolchi", "admin123"));
 
@@ -327,9 +434,127 @@ public:
         chambres.push_back(make_shared<ChambreSuiteRoyal>(601, 2000.0));
     }
 
-    // bayna hadi 
+    // Charge les chambres depuis le fichier chambres.txt
+    // Reconstruit les objets Chambre selon leur type (Single, Double, Suite, etc.)
+    void chargerChambres() {
+        ifstream file(FICHIER_CHAMBRES);
+        if (!file.is_open()) {
+            return; // Fichier n'existe pas encore, sera créé lors de la première sauvegarde
+        }
+
+        string line;
+        while (getline(file, line)) {
+            if (!line.empty()) {
+                stringstream ss(line);
+                string type, numStr, prixStr, pourcStr, occStr;
+                getline(ss, type, '|');
+                getline(ss, numStr, '|');
+                getline(ss, prixStr, '|');
+                getline(ss, pourcStr, '|');
+                getline(ss, occStr, '|');
+
+                int num = stoi(numStr);
+                float prix = stof(prixStr);
+                double pourc = stod(pourcStr);
+                bool occ = (occStr == "1");
+
+                // Crée le bon type de chambre selon le type lu dans le fichier
+                shared_ptr<Chambre> chambre;
+                if (type == "Single") {
+                    chambre = make_shared<ChambreSingle>(num, prix, pourc, occ);
+                } else if (type == "Double") {
+                    chambre = make_shared<ChambreDouble>(num, prix, pourc, occ);
+                } else if (type == "Suite") {
+                    chambre = make_shared<ChambreSuite>(num, prix, pourc, occ);
+                } else if (type == "Deluxe") {
+                    chambre = make_shared<ChambreDeluxe>(num, prix, pourc, occ);
+                } else if (type == "Presidential") {
+                    chambre = make_shared<ChambrePresidential>(num, prix, pourc, occ);
+                } else if (type == "Suite Royale") {
+                    chambre = make_shared<ChambreSuiteRoyal>(num, prix, pourc, occ);
+                }
+
+                if (chambre) {
+                    chambres.push_back(chambre);
+                }
+            }
+        }
+        file.close();
+    }
+
+    // Charge les clients depuis le fichier clients.txt
+    void chargerClients() {
+        ifstream file(FICHIER_CLIENTS);
+        if (!file.is_open()) {
+            return; // Fichier n'existe pas encore, sera créé lors de la première sauvegarde
+        }
+
+        string line;
+        while (getline(file, line)) {
+            if (!line.empty()) {
+                clients.push_back(Client::fromFileString(line));
+            }
+        }
+        file.close();
+    }
+
+    // Charge les réservations depuis le fichier reservations.txt
+    void chargerReservations() {
+        ifstream file(FICHIER_RESERVATIONS);
+        if (!file.is_open()) {
+            cout << "📁 Fichier réservations introuvable." << endl;
+            return; // Fichier n'existe pas encore, sera créé lors de la première sauvegarde
+        }
+
+        string line;
+        while (getline(file, line)) {
+            if (!line.empty()) {
+                reservations.push_back(Reservation::fromFileString(line));
+            }
+        }
+        file.close();
+
+        cout << "✓ " << reservations.size() << " réservation(s) chargée(s)" << endl;
+    }
+
+    // Sauvegarde toutes les chambres dans le fichier chambres.txt
+    void sauvegarderChambres() {
+        ofstream file(FICHIER_CHAMBRES);
+        for (const auto& chambre : chambres) {
+            file << chambre->toFileString() << endl;
+        }
+        file.close();
+    }
+
+    // Sauvegarde tous les clients dans le fichier clients.txt
+    void sauvegarderClients() {
+        ofstream file(FICHIER_CLIENTS);
+        for (const auto& client : clients) {
+            file << client->toFileString() << endl;
+        }
+        file.close();
+    }
+
+    // Sauvegarde toutes les réservations dans le fichier reservations.txt
+    void sauvegarderReservations() {
+        ofstream file(FICHIER_RESERVATIONS);
+        for (const auto& res : reservations) {
+            file << res->toFileString() << endl;
+        }
+        file.close();
+    }
+
+    // Sauvegarde toutes les données (chambres, clients, réservations) dans leurs fichiers respectifs
+    void sauvegarderTout() {
+        sauvegarderChambres();
+        sauvegarderClients();
+        sauvegarderReservations();
+    }
+
+    // Ajoute un nouveau client et sauvegarde immédiatement dans le fichier
     void ajouterClient(shared_ptr<Client> c) {
         clients.push_back(c);
+        sauvegarderClients(); // Sauvegarde automatique lors de l'ajout
     }
 
     void ajouterReservation(shared_ptr<Reservation> r) {
@@ -406,7 +631,7 @@ public:
             });
         return (it != reservations.end()) ? *it : nullptr;
     }
-    //hadi gha d menu client 
+    //hadi gha d menu client
     void afficherReservationsClient(shared_ptr<Client> client) const {
         cout << "\n=== Vos Réservations ===" << endl;
         bool found = false;
@@ -419,7 +644,7 @@ public:
         }
         if (!found) cout << "Aucune réservation trouvée." << endl;
     }
-    //hadi kat3tiha num d res katchof wach kayna kaylibiri dik room li dakhla f res w kayms7 babaha reservation mn vecteur  
+    //hadi kat3tiha num d res katchof wach kayna kaylibiri dik room li dakhla f res w kayms7 babaha reservation mn vecteur
     bool annulerReservation(int numeroReservation) {
         auto res = trouverReservation(numeroReservation);
         if (!res) {
@@ -430,6 +655,7 @@ public:
         auto chambre = trouverChambre(res->getNumeroChambre());
         if (chambre) {
             chambre->setOccupe(false);
+            sauvegarderChambres(); // Sauvegarde le changement d'état de la chambre (libre)
         }
 
         auto it = remove_if(reservations.begin(), reservations.end(),
@@ -439,13 +665,14 @@ public:
 
         if (it != reservations.end()) {
             reservations.erase(it, reservations.end());
+            sauvegarderReservations(); // Sauvegarde la suppression de la réservation
             cout << "\n✓ Réservation #" << numeroReservation << " annulée avec succès!" << endl;
             return true;
         }
 
         return false;
     }
-    // katmodifier porcentage bach tl3 prix total dyal chambre (brix bas hard coded)
+    // Modifie le pourcentage de majoration d'une chambre et sauvegarde le changement
     bool modifierPourcentage(int numero, double nouveauPourcentage) {
         auto chambre = trouverChambre(numero);
         if (!chambre) {
@@ -455,6 +682,7 @@ public:
 
         double ancienPrix = chambre->calculerPrixParNuit();
         chambre->setPourcentage(nouveauPourcentage);
+        sauvegarderChambres(); // Sauvegarde la modification du pourcentage
 
         cout << "\nChambre " << numero << " - Prix par nuit: " << ancienPrix
             << " DH -> " << chambre->calculerPrixParNuit() << " DH" << endl;
@@ -463,8 +691,7 @@ public:
 };
 
 //Menu
-
-//machi chi7aja gha bach fach dkhl l monu tms7 dakchi li 9bl 
+//machi chi7aja gha bach fach dkhl l monu tms7 dakchi li 9bl
 void clearScreen() {
 #ifdef _WIN32
     system("cls");
@@ -554,6 +781,8 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
             auto res = make_shared<Reservation>(client->getCin(), numChambre, dateDebut, dateFin, nombreJours, prixTotal);
             hotel.ajouterReservation(res);
             chambre->setOccupe(true);
+            hotel.sauvegarderReservations(); // Sauvegarde la nouvelle réservation
+            hotel.sauvegarderChambres(); // Sauvegarde le changement d'état de la chambre (occupée)
 
             cout << "\n✓ Réservation créée avec succès!" << endl;
             cout << "Numéro de réservation: " << res->getNumeroReservation() << endl;
@@ -747,5 +976,7 @@ int main() {
         }
     } while (choix != 0);
 
+    // Sauvegarde toutes les données avant de quitter le programme
+    hotel.sauvegarderTout();
     return 0;
 }
