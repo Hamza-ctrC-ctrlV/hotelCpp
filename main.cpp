@@ -958,7 +958,7 @@ public:
         cin >> id;
         cin.ignore();
 
-        auto staffMember = trouverStaffParId(id);
+    auto staffMember = trouverStaffParId(id);
         if (!staffMember) {
             cout << "Staff member not found!" << endl;
             return;
@@ -1131,8 +1131,11 @@ void menuCreationChambre(Hotel& hotel) {
     float prixBase;
     int typeChoix;
 
-    cout << "\nRoom number: ";
+    cout << "\nRoom number (select [0] to exit): ";
     cin >> numero;
+    cin.ignore();
+
+    while(numero!=0){
 
     cout << "\nRoom Type:" << endl;
     cout << "[1] Single (Default: 300 DH)" << endl;
@@ -1164,16 +1167,18 @@ void menuCreationChambre(Hotel& hotel) {
 
     hotel.ajouterChambre(nouvelleChambre);
     cout << "\n✓ Room created successfully!" << endl;
-}
+}}
 
 void menuGestionChambre(Hotel& hotel) {
     clearScreen();
     hotel.afficherToutesChambres();
 
     int numero;
-    cout << "\nRoom number to manage: ";
+    cout << "\nRoom number to manage (select [0] to exit): ";
     cin >> numero;
     cin.ignore();
+
+   while(numero!=0){
 
     auto chambre = hotel.trouverChambre(numero);
     if (!chambre) {
@@ -1223,7 +1228,7 @@ void menuGestionChambre(Hotel& hotel) {
         }
     } while (choix != 0);
 }
-
+}
 
 
 void gestionreservation(Hotel& hotel, shared_ptr<Client> client) {
@@ -1235,21 +1240,23 @@ void gestionreservation(Hotel& hotel, shared_ptr<Client> client) {
     bool validReservation = false;
 
     do {
-        cout << "\nReservation number to manage: ";
+        cout << "\nReservation number to manage (select [0] to exit): ";
         cin >> numero;
         cin.ignore();
+
+        if(numero==0){break;}
 
         reservation = hotel.trouverReservation(numero);
         if (!reservation || reservation->getNumeroClient() != client->getNumeroClient()) {
             cout << "Reservation not found or does not belong to you! Please try again." << endl;
-        }
-        else {
+        } else {
             validReservation = true;
         }
     } while (!validReservation);
 
+
     int choix;
-    do {
+    do { if(numero==0){break;}
         cout << "\n=== Managing reservation " << numero << " ===" << endl;
         cout << "[1] Modify stay period" << endl;
         cout << "[2] Modify room" << endl;
@@ -1291,8 +1298,8 @@ void gestionreservation(Hotel& hotel, shared_ptr<Client> client) {
         }
         case 2: {
             hotel.afficherChambresLibres();
-            auto roomlist = hotel.getChambresLibres();
-            if (roomlist.empty()) {
+           auto roomlist=hotel.getChambresLibres();
+             if (roomlist.empty()) {
                 break;
             }
             int nouveauNumeroChambre;
@@ -1352,8 +1359,8 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
         switch (choix) {
         case 1: {
             hotel.afficherChambresLibres();
-            auto roomlist = hotel.getChambresLibres();
-            if (roomlist.empty()) {
+           auto roomlist=hotel.getChambresLibres();
+             if (roomlist.empty()) {
                 break;
             }
 
@@ -1411,7 +1418,7 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
         }
 
         case 3: {
-            gestionreservation(hotel, client);
+           gestionreservation(hotel, client);
             cout << "\nPress Enter to continue...";
             std::cin.get();
             break;
@@ -1421,9 +1428,12 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
             hotel.afficherReservationsClient(client);
 
             int numReservation;
-            cout << "\nReservation number to cancel: ";
+            cout << "\nReservation number to cancel (select [0] to exit): ";
             cin >> numReservation;
             cin.ignore();
+
+            if(numReservation==0){
+            break;}
 
 
             int confirmation;
@@ -1486,9 +1496,12 @@ void menuStaff(Hotel& hotel, shared_ptr<Staff> staff) {
             hotel.afficherTousClients();
 
             int numeroClient;
-            cout << "\nClient number to modify: ";
+            cout << "\nClient number to modify (select [0] to exit): ";
             cin >> numeroClient;
             cin.ignore();
+
+            if(numeroClient==0){  cout << "\nPress Enter to continue...";
+ break;}
 
             hotel.modifierInformationsClient(numeroClient);
             cout << "\nPress Enter to continue...";
@@ -1500,9 +1513,11 @@ void menuStaff(Hotel& hotel, shared_ptr<Staff> staff) {
             hotel.afficherToutesReservations();
 
             int numReservation;
-            cout << "\nReservation number to cancel: ";
+            cout << "\nReservation number to cancel (select [0] to exit): ";
             cin >> numReservation;
             cin.ignore();
+
+            if(numReservation==0){ break;}
 
             int confirmation;
             cout << "Are you sure you want to cancel reservation #" << numReservation << "?" << endl;
