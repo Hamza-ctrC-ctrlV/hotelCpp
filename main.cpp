@@ -3,9 +3,10 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
-#include <sstream> // // lib bach n9lb klma ar9am w l3ks (5<->"5")
+#include <sstream>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
 using namespace std;
 
 //Classes Personne, Client, Staff
@@ -23,15 +24,15 @@ public:
     }
 
     virtual void afficher() const {
-        cout << "Nom: " << nom << " " << prenom
+        cout << "Name: " << nom << " " << prenom
             << " | CIN: " << cin
-            << " | Tel: " << telephone;
+            << " | Phone: " << telephone;
     }
-    //surcharge bach tsma dkhlna dakchi li kan9raw hh
+
     bool operator==(const Personne& autre) const {
         return cin == autre.cin;
     }
-    //ta hna nfs l7aja
+
     friend ostream& operator<<(ostream& os, const Personne& p) {
         os << p.nom << " " << p.prenom << " (CIN: " << p.cin << ")";
         return os;
@@ -44,6 +45,7 @@ public:
 
     void setNom(string n) { nom = n; }
     void setPrenom(string p) { prenom = p; }
+    void setCin(string c) { cin = c; }
     void setTelephone(string t) { telephone = t; }
 
     virtual ~Personne() {}
@@ -52,18 +54,23 @@ public:
 class Client : public Personne {
 private:
     int numeroClient;
+    string motDePasse;
+    int tentativesEchouees;
+    bool compteActif;
     static int compteurClients;
 
 public:
-    Client(string n, string p, string c, string tel)
-        : Personne(n, p, c, tel) {
+    Client(string n, string p, string c, string tel, string mdp = "1234",
+        int tentatives = 0, bool actif = true)
+        : Personne(n, p, c, tel), motDePasse(mdp),
+        tentativesEchouees(tentatives), compteActif(actif) {
         numeroClient = ++compteurClients;
     }
 
     void afficher() const override {
         cout << "[Client #" << numeroClient << "] ";
         Personne::afficher();
-        cout << endl;
+        cout << " | Status: " << (compteActif ? "Active" : "BLOCKED") << endl;
     }
 
     bool operator<(const Client& autre) const {
@@ -71,27 +78,47 @@ public:
     }
 
     int getNumeroClient() const { return numeroClient; }
+    string getMotDePasse() const { return motDePasse; }
+    int getTentativesEchouees() const { return tentativesEchouees; }
+    bool isCompteActif() const { return compteActif; }
 
-    // Convertit les données du client en format texte pour sauvegarde dans fichier
-    // Format: NumeroClient|Nom|Prenom|CIN|Telephone
-    string toFileString() const {
-        return to_string(numeroClient) + "|" + getNom() + "|" + 
-               getPrenom() + "|" + getCin() + "|" + getTelephone();
+    void setMotDePasse(string mdp) { motDePasse = mdp; }
+    void setCompteActif(bool actif) { compteActif = actif; }
+
+    void incrementerTentatives() {
+        tentativesEchouees++;
+        if (tentativesEchouees >= 5) {
+            compteActif = false;
+        }
     }
 
-    // Crée un objet Client à partir d'une ligne de fichier
-    // Met à jour le compteur statique pour éviter les conflits d'ID lors de la création de nouveaux clients
+    void reinitialiserTentatives() { tentativesEchouees = 0; }
+
+    bool verifierMotDePasse(string mdp) const {
+        return motDePasse == mdp;
+    }
+
+    string toFileString() const {
+        return to_string(numeroClient) + "|" + getNom() + "|" +
+            getPrenom() + "|" + getCin() + "|" + getTelephone() + "|" +
+            motDePasse + "|" + to_string(tentativesEchouees) + "|" +
+            (compteActif ? "Yes" : "No");
+    }
+
     static shared_ptr<Client> fromFileString(const string& line) {
         stringstream ss(line);
-        string numStr, nom, prenom, cin, tel;
+        string numStr, nom, prenom, cin, tel, mdp, tentStr, actifStr;
         getline(ss, numStr, '|');
         getline(ss, nom, '|');
         getline(ss, prenom, '|');
         getline(ss, cin, '|');
         getline(ss, tel, '|');
+        getline(ss, mdp, '|');
+        getline(ss, tentStr, '|');
+        getline(ss, actifStr, '|');
 
-        auto client = make_shared<Client>(nom, prenom, cin, tel);
-        // Met à jour le compteur pour éviter les conflits d'ID
+        auto client = make_shared<Client>(nom, prenom, cin, tel, mdp,
+            stoi(tentStr), (actifStr == "Yes"));
         if (stoi(numStr) > compteurClients) {
             compteurClients = stoi(numStr);
         }
@@ -117,20 +144,24 @@ public:
     void afficher() const override {
         cout << "[Staff #" << idStaff << "] ";
         Personne::afficher();
-        cout << " | Poste: " << poste << endl;
+        cout << " | Position: " << poste << endl;
     }
 
     int getIdStaff() const { return idStaff; }
     string getPoste() const { return poste; }
+
+    void setIdStaff(int id) { idStaff = id; }
+    void setPoste(string p) { poste = p; }
+    void setMotDePasse(string mdp) { motDePasse = mdp; }
 
     bool verifierMotDePasse(string mdp) const {
         return motDePasse == mdp;
     }
 
     string toFileString() const {
-        return to_string(idStaff) + "|" + getNom() + "|" + 
-               getPrenom() + "|" + getCin() + "|" + getTelephone() + "|" + 
-               poste + "|" + motDePasse;
+        return to_string(idStaff) + "|" + getNom() + "|" +
+            getPrenom() + "|" + getCin() + "|" + getTelephone() + "|" +
+            poste + "|" + motDePasse;
     }
 
     static shared_ptr<Staff> fromFileString(const string& line) {
@@ -145,17 +176,18 @@ public:
         getline(ss, mdp, '|');
 
         auto staff = make_shared<Staff>(nom, prenom, cin, tel, post, mdp);
-        // Set the counter to the loaded number to avoid conflicts
         if (stoi(idStr) > compteurStaff) {
             compteurStaff = stoi(idStr);
         }
         return staff;
     }
+
+
 };
-// ta hadi b7al d reservation n9dro n7tajoha mn b3d dakchi lach khlitha
+
 int Staff::compteurStaff = 0;
 
-// fonction bach n7sb lyali
+void clearScreen();
 
 int calculerNombreJours(const string& dateDebut, const string& dateFin) {
     int jour1, mois1, annee1;
@@ -197,18 +229,18 @@ public:
     }
 
     virtual void afficher() const {
-        cout << "Chambre " << numero << " [" << getNomType() << "] - "
-            << calculerPrixParNuit() << " DH/nuit - "
-            << (estOccupee ? "Occupée" : "Libre");
+        cout << "Room " << numero << " [" << getNomType() << "] - "
+            << calculerPrixParNuit() << " DH/night - "
+            << (estOccupee ? "Occupied" : "Available");
     }
 
     virtual void afficherDetail() const {
-        cout << "Numéro de chambre: " << numero << endl;
-        cout << "Type de chambre: " << getNomType() << endl;
-        cout << "Prix de base: " << prixbase << " DH" << endl;
-        cout << "Prix par nuit: " << calculerPrixParNuit() << " DH" << endl;
-        cout << "Est occupée: " << (estOccupee ? "Oui" : "Non") << endl;
-        cout << "Pourcentage: " << pourcentage << "%" << endl;
+        cout << "Room Number: " << numero << endl;
+        cout << "Room Type: " << getNomType() << endl;
+        cout << "Base Price: " << prixbase << " DH" << endl;
+        cout << "Price per Night: " << calculerPrixParNuit() << " DH" << endl;
+        cout << "Status: " << (estOccupee ? "Occupied" : "Available") << endl;
+        cout << "Percentage: " << pourcentage << "%" << endl;
     }
 
     virtual string getNomType() const = 0;
@@ -229,12 +261,10 @@ public:
     void setPourcentage(double pourcentage) { this->pourcentage = pourcentage; }
     void setOccupe(bool occupe) { this->estOccupee = occupe; }
 
-    // Convertit les données de la chambre en format texte pour sauvegarde dans fichier
-    // Format: Type|Numero|PrixBase|Pourcentage|EstOccupee (0 ou 1)
     string toFileString() const {
-        return getNomType() + "|" + to_string(numero) + "|" + 
-               to_string(prixbase) + "|" + to_string(pourcentage) + "|" + 
-               (estOccupee ? "1" : "0");
+        return getNomType() + "|" + to_string(numero) + "|" +
+            to_string(prixbase) + "|" + to_string(pourcentage) + "|" +
+            (estOccupee ? "Yes" : "No");
     }
 
     virtual ~Chambre() {}
@@ -299,7 +329,7 @@ public:
 class Reservation {
 private:
     int numeroReservation;
-    string cinClient;
+    int numeroClient;
     int numeroChambre;
     string dateDebut;
     string dateFin;
@@ -308,8 +338,8 @@ private:
     static int compteurReservations;
 
 public:
-    Reservation(string cin, int numChambre, string debut, string fin, int jours, double prix)
-        : cinClient(cin), numeroChambre(numChambre),
+    Reservation(int numClient, int numChambre, string debut, string fin, int jours, double prix)
+        : numeroClient(numClient), numeroChambre(numChambre),
         dateDebut(debut), dateFin(fin), nombreJours(jours), prixTotal(prix) {
         numeroReservation = ++compteurReservations;
     }
@@ -322,25 +352,27 @@ public:
         return numeroReservation < autre.numeroReservation;
     }
 
-    void afficher() const {
-        cout << "Res #" << numeroReservation << " | Ch " << numeroChambre
+    void afficher(const Client& c) const {
+        cout << "Res #" << numeroReservation
+            << " | Guest: " << c.getNom() << " " << c.getPrenom()
+            << " | Room " << numeroChambre
             << " | " << dateDebut << " -> " << dateFin
-            << " | " << nombreJours << " nuits | Total : " << prixTotal << " DH";
+            << " | " << nombreJours << " nights | Total: " << prixTotal << " DH";
     }
 
     void afficherDetail(const string& nomClient, const string& prenomClient,
         const string& typeChambre) const {
-        cout << "\n=== Réservation #" << numeroReservation << " ===" << endl;
-        cout << "Client: " << nomClient << " " << prenomClient << endl;
-        cout << "Chambre: " << numeroChambre << " [" << typeChambre << "]" << endl;
+        cout << "\n=== Reservation #" << numeroReservation << " ===" << endl;
+        cout << "Client: " << nomClient << " " << prenomClient << " (Client #" << numeroClient << ")" << endl;
+        cout << "Room: " << numeroChambre << " [" << typeChambre << "]" << endl;
         cout << "Dates: " << dateDebut << " -> " << dateFin << endl;
-        cout << "Nombre de nuits: " << nombreJours << endl;
-        cout << "Prix par nuit: " << (prixTotal / nombreJours) << " DH" << endl;
-        cout << "Prix total: " << prixTotal << " DH" << endl;
+        cout << "Number of nights: " << nombreJours << endl;
+        cout << "Price per night: " << (prixTotal / nombreJours) << " DH" << endl;
+        cout << "Total price: " << prixTotal << " DH" << endl;
     }
 
     int getNumeroReservation() const { return numeroReservation; }
-    string getCinClient() const { return cinClient; }
+    int getNumeroClient() const { return numeroClient; }
     int getNumeroChambre() const { return numeroChambre; }
     string getDateDebut() const { return dateDebut; }
     string getDateFin() const { return dateFin; }
@@ -352,39 +384,41 @@ public:
     void setNumeroChambre(int num) { numeroChambre = num; }
     void setNombreJours(int jours) { nombreJours = jours; }
     void setPrixTotal(double prix) { prixTotal = prix; }
-    
-    // Convertit les données de la réservation en format texte pour sauvegarde dans fichier
-    // Format: NumeroReservation|CINClient|NumeroChambre|DateDebut|DateFin|NombreJours|PrixTotal
+
     string toFileString() const {
-        return to_string(numeroReservation) + "|" + cinClient + "|" +
+        return to_string(numeroReservation) + "|" + to_string(numeroClient) + "|" +
             to_string(numeroChambre) + "|" + dateDebut + "|" + dateFin + "|" +
             to_string(nombreJours) + "|" + to_string(prixTotal);
     }
 
-    // Crée un objet Reservation à partir d'une ligne de fichier
     static shared_ptr<Reservation> fromFileString(const string& line) {
         stringstream ss(line);
-        string numStr, cin, numChStr, debut, fin, joursStr, prixStr;
+        string numStr, numClientStr, numChStr, debut, fin, joursStr, prixStr;
         getline(ss, numStr, '|');
-        getline(ss, cin, '|');
+        getline(ss, numClientStr, '|');
         getline(ss, numChStr, '|');
         getline(ss, debut, '|');
         getline(ss, fin, '|');
         getline(ss, joursStr, '|');
         getline(ss, prixStr, '|');
 
-        return make_shared<Reservation>(
-            cin,
+        auto res = make_shared<Reservation>(
+            stoi(numClientStr),
             stoi(numChStr),
             debut,
             fin,
             stoi(joursStr),
             stod(prixStr)
         );
+
+        if (stoi(numStr) > compteurReservations) {
+            compteurReservations = stoi(numStr);
+        }
+
+        return res;
     }
 };
 
-//hadi katb9a t incrementa bach ykon 3dna id d kol reservation (chof constructeur bach tfhm)
 int Reservation::compteurReservations = 0;
 
 //Classe Hotel
@@ -395,166 +429,189 @@ private:
     vector<shared_ptr<Staff>> staffMembers;
     vector<shared_ptr<Client>> clients;
     vector<shared_ptr<Reservation>> reservations;
-    // Noms des fichiers pour la persistance des données
     const string FICHIER_RESERVATIONS = "reservations.txt";
     const string FICHIER_CHAMBRES = "chambres.txt";
     const string FICHIER_CLIENTS = "clients.txt";
+    const string FICHIER_STAFF = "staff.txt";
 
 public:
     Hotel() {
-        // Charge les données depuis les fichiers au démarrage
+        chargerStaff();
         chargerChambres();
         chargerClients();
         chargerReservations();
-        
-        // Si les fichiers n'existent pas, initialise les données par défaut
-        if (chambres.empty()) {
-            initialiserDonnees();
-            sauvegarderChambres(); // Sauvegarde les chambres initiales
-        }
-        // Le staff est toujours initialisé en mémoire (pas sauvegardé dans fichier)
-        if (staffMembers.empty()) {
-            initialiserDonnees();
-        }
     }
 
-    void initialiserDonnees() {
-        // Initial dyal staff
-        staffMembers.push_back(make_shared<Staff>("Med", "Hamza", "ADMIN001",
-            "060000000", "chef li chaf kolchi", "admin123"));
+    void chargerStaff() {
+        ifstream file(FICHIER_STAFF.c_str());
+        if (!file.is_open()) {
+            return;
+        }
 
-        // Initial dyal chambres
-        chambres.push_back(make_shared<ChambreSingle>(101, 300.0));
-        chambres.push_back(make_shared<ChambreSingle>(102, 300.0));
-        chambres.push_back(make_shared<ChambreDouble>(201, 500.0));
-        chambres.push_back(make_shared<ChambreDouble>(202, 500.0));
-        chambres.push_back(make_shared<ChambreSuite>(301, 800.0));
-        chambres.push_back(make_shared<ChambreDeluxe>(401, 1000.0));
-        chambres.push_back(make_shared<ChambrePresidential>(501, 1500.0));
-        chambres.push_back(make_shared<ChambreSuiteRoyal>(601, 2000.0));
+        string line;
+        // Skip header lines
+        while (getline(file, line)) {
+            if (line.empty() || line[0] == '#') {
+                continue;
+            }
+            staffMembers.push_back(Staff::fromFileString(line));
+        }
+        file.close();
     }
 
-    // Charge les chambres depuis le fichier chambres.txt
-    // Reconstruit les objets Chambre selon leur type (Single, Double, Suite, etc.)
     void chargerChambres() {
-        ifstream file(FICHIER_CHAMBRES);
+        ifstream file(FICHIER_CHAMBRES.c_str());
         if (!file.is_open()) {
-            return; // Fichier n'existe pas encore, sera créé lors de la première sauvegarde
+            return;
         }
 
         string line;
+        // Skip header lines
         while (getline(file, line)) {
-            if (!line.empty()) {
-                stringstream ss(line);
-                string type, numStr, prixStr, pourcStr, occStr;
-                getline(ss, type, '|');
-                getline(ss, numStr, '|');
-                getline(ss, prixStr, '|');
-                getline(ss, pourcStr, '|');
-                getline(ss, occStr, '|');
+            if (line.empty() || line[0] == '#') {
+                continue;
+            }
 
-                int num = stoi(numStr);
-                float prix = stof(prixStr);
-                double pourc = stod(pourcStr);
-                bool occ = (occStr == "1");
+            stringstream ss(line);
+            string type, numStr, prixStr, pourcStr, occStr;
+            getline(ss, type, '|');
+            getline(ss, numStr, '|');
+            getline(ss, prixStr, '|');
+            getline(ss, pourcStr, '|');
+            getline(ss, occStr, '|');
 
-                // Crée le bon type de chambre selon le type lu dans le fichier
-                shared_ptr<Chambre> chambre;
-                if (type == "Single") {
-                    chambre = make_shared<ChambreSingle>(num, prix, pourc, occ);
-                } else if (type == "Double") {
-                    chambre = make_shared<ChambreDouble>(num, prix, pourc, occ);
-                } else if (type == "Suite") {
-                    chambre = make_shared<ChambreSuite>(num, prix, pourc, occ);
-                } else if (type == "Deluxe") {
-                    chambre = make_shared<ChambreDeluxe>(num, prix, pourc, occ);
-                } else if (type == "Presidential") {
-                    chambre = make_shared<ChambrePresidential>(num, prix, pourc, occ);
-                } else if (type == "Suite Royale") {
-                    chambre = make_shared<ChambreSuiteRoyal>(num, prix, pourc, occ);
-                }
+            int num = stoi(numStr);
+            float prix = stof(prixStr);
+            double pourc = stod(pourcStr);
+            bool occ = (occStr == "Yes");
 
-                if (chambre) {
-                    chambres.push_back(chambre);
-                }
+            shared_ptr<Chambre> chambre;
+            if (type == "Single") {
+                chambre = make_shared<ChambreSingle>(num, prix, pourc, occ);
+            }
+            else if (type == "Double") {
+                chambre = make_shared<ChambreDouble>(num, prix, pourc, occ);
+            }
+            else if (type == "Suite") {
+                chambre = make_shared<ChambreSuite>(num, prix, pourc, occ);
+            }
+            else if (type == "Deluxe") {
+                chambre = make_shared<ChambreDeluxe>(num, prix, pourc, occ);
+            }
+            else if (type == "Presidential") {
+                chambre = make_shared<ChambrePresidential>(num, prix, pourc, occ);
+            }
+            else if (type == "Suite Royale") {
+                chambre = make_shared<ChambreSuiteRoyal>(num, prix, pourc, occ);
+            }
+
+            if (chambre) {
+                chambres.push_back(chambre);
             }
         }
         file.close();
     }
 
-    // Charge les clients depuis le fichier clients.txt
     void chargerClients() {
-        ifstream file(FICHIER_CLIENTS);
+        ifstream file(FICHIER_CLIENTS.c_str());
         if (!file.is_open()) {
-            return; // Fichier n'existe pas encore, sera créé lors de la première sauvegarde
+            return;
         }
 
         string line;
+        // Skip header lines
         while (getline(file, line)) {
-            if (!line.empty()) {
-                clients.push_back(Client::fromFileString(line));
+            if (line.empty() || line[0] == '#') {
+                continue;
             }
+
+            clients.push_back(Client::fromFileString(line));
         }
+
         file.close();
     }
 
-    // Charge les réservations depuis le fichier reservations.txt
+
     void chargerReservations() {
-        ifstream file(FICHIER_RESERVATIONS);
+        ifstream file(FICHIER_RESERVATIONS.c_str());
         if (!file.is_open()) {
-            cout << "📁 Fichier réservations introuvable." << endl;
-            return; // Fichier n'existe pas encore, sera créé lors de la première sauvegarde
+            return;
         }
 
         string line;
+        // Skip header lines
         while (getline(file, line)) {
-            if (!line.empty()) {
-                reservations.push_back(Reservation::fromFileString(line));
+            if (line.empty() || line[0] == '#') {
+                continue;
             }
+            reservations.push_back(Reservation::fromFileString(line));
         }
         file.close();
-
-        cout << "✓ " << reservations.size() << " réservation(s) chargée(s)" << endl;
     }
 
-    // Sauvegarde toutes les chambres dans le fichier chambres.txt
+    void sauvegarderStaff() {
+        ofstream file(FICHIER_STAFF.c_str());
+        file << "# STAFF DATA FILE" << endl;
+        file << "# Staff ID|surname|name|cin|phone number|position|password" << endl;
+        for (const auto& staff : staffMembers) {
+            file << staff->toFileString() << endl;
+        }
+        file.close();
+    }
+
     void sauvegarderChambres() {
-        ofstream file(FICHIER_CHAMBRES);
+        ofstream file(FICHIER_CHAMBRES.c_str());
+        file << "# ROOMS DATA FILE" << endl;
+        file << "# Room type|room number|base price|percentage|occupied status" << endl;
         for (const auto& chambre : chambres) {
             file << chambre->toFileString() << endl;
         }
         file.close();
     }
 
-    // Sauvegarde tous les clients dans le fichier clients.txt
     void sauvegarderClients() {
-        ofstream file(FICHIER_CLIENTS);
+        ofstream file(FICHIER_CLIENTS.c_str());
+        file << "# CLIENTS DATA FILE" << endl;
+        file << "# Client ID|surname|name|cin|phone number|password|failed attempts|active account" << endl;
+
         for (const auto& client : clients) {
             file << client->toFileString() << endl;
         }
+
         file.close();
     }
 
-    // Sauvegarde toutes les réservations dans le fichier reservations.txt
+
     void sauvegarderReservations() {
-        ofstream file(FICHIER_RESERVATIONS);
+        ofstream file(FICHIER_RESERVATIONS.c_str());
+        file << "# RESERVATIONS DATA FILE" << endl;
+        file << "# Reservation ID|Client ID|Room number|start date|end date|number of days|total price" << endl;
         for (const auto& res : reservations) {
             file << res->toFileString() << endl;
         }
         file.close();
     }
 
-    // Sauvegarde toutes les données (chambres, clients, réservations) dans leurs fichiers respectifs
     void sauvegarderTout() {
+        sauvegarderStaff();
         sauvegarderChambres();
         sauvegarderClients();
         sauvegarderReservations();
     }
 
-    // Ajoute un nouveau client et sauvegarde immédiatement dans le fichier
     void ajouterClient(shared_ptr<Client> c) {
         clients.push_back(c);
-        sauvegarderClients(); // Sauvegarde automatique lors de l'ajout
+        sauvegarderClients();
+    }
+
+    void ajouterStaff(shared_ptr<Staff> s) {
+        staffMembers.push_back(s);
+        sauvegarderStaff();
+    }
+
+    void ajouterChambre(shared_ptr<Chambre> c) {
+        chambres.push_back(c);
+        sauvegarderChambres();
     }
 
     void ajouterReservation(shared_ptr<Reservation> r) {
@@ -562,7 +619,7 @@ public:
     }
 
     void afficherChambresLibres() const {
-        cout << "\n=== Chambres Disponibles ===" << endl;
+        cout << "\n=== Available Rooms ===" << endl;
         bool found = false;
         for (const auto& chambre : chambres) {
             if (!chambre->isOccupee()) {
@@ -571,41 +628,80 @@ public:
                 found = true;
             }
         }
-        if (!found) cout << "Aucune chambre libre." << endl;
+        if (!found) cout << "No available rooms." << endl;
+    }
+
+    vector<shared_ptr<Chambre>> getChambresLibres() const {
+        vector<shared_ptr<Chambre>> libres;
+        for (const auto& chambre : chambres) {
+            if (!chambre->isOccupee()) {
+                libres.push_back(chambre);
+            }
+        }
+        return libres;
     }
 
     void afficherToutesChambres() const {
-        cout << "\n=== Toutes les Chambres ===" << endl;
+        cout << "\n=== All Rooms ===" << endl;
         for (const auto& chambre : chambres) {
             chambre->afficher();
             cout << endl;
         }
     }
-    //hadi f staff katbynlk ga3 les reservation
+
     void afficherToutesReservations() const {
-        cout << "\n=== Toutes les Réservations ===" << endl;
+        cout << "\n=== All Reservations ===" << endl;
         if (reservations.empty()) {
-            cout << "Aucune réservation." << endl;
+            cout << "No reservations." << endl;
             return;
         }
         for (const auto& res : reservations) {
-            auto client = trouverClientParCIN(res->getCinClient());
-            string nomClient = client ? client->getNom() : "Inconnu";
-            string prenomClient = client ? client->getPrenom() : "Inconnu";
+            auto client = trouverClientParNumero(res->getNumeroClient());
+            string nomClient = client ? client->getNom() : "Unknown";
+            string prenomClient = client ? client->getPrenom() : "Unknown";
             auto chambre = trouverChambre(res->getNumeroChambre());
-            string typeChambre = chambre ? chambre->getNomType() : "Inconnu";
+            string typeChambre = chambre ? chambre->getNomType() : "Unknown";
             res->afficherDetail(nomClient, prenomClient, typeChambre);
             cout << endl;
         }
     }
 
-    //brasi ma3arfch hadchi ms lmohim c q khdam yay hhh
+    void afficherTousClients() const {
+        cout << "\n=== All Clients ===" << endl;
+        if (clients.empty()) {
+            cout << "No registered clients." << endl;
+            return;
+        }
+        for (const auto& client : clients) {
+            client->afficher();
+        }
+    }
+
+    void afficherTousStaff() const {
+        cout << "\n=== All Staff Members ===" << endl;
+        if (staffMembers.empty()) {
+            cout << "No staff members." << endl;
+            return;
+        }
+        for (const auto& staff : staffMembers) {
+            staff->afficher();
+        }
+    }
+
     shared_ptr<Chambre> trouverChambre(int numero) const {
         auto it = find_if(chambres.begin(), chambres.end(),
             [numero](const shared_ptr<Chambre>& ch) {
                 return ch->getNumero() == numero;
             });
         return (it != chambres.end()) ? *it : nullptr;
+    }
+
+    shared_ptr<Client> trouverClientParNumero(int numero) const {
+        auto it = find_if(clients.begin(), clients.end(),
+            [numero](const shared_ptr<Client>& cl) {
+                return cl->getNumeroClient() == numero;
+            });
+        return (it != clients.end()) ? *it : nullptr;
     }
 
     shared_ptr<Client> trouverClientParCIN(string cin) const {
@@ -616,10 +712,10 @@ public:
         return (it != clients.end()) ? *it : nullptr;
     }
 
-    shared_ptr<Staff> trouverStaffParMotDePasse(string mdp) {
+    shared_ptr<Staff> trouverStaffParId(int id) {
         auto it = find_if(staffMembers.begin(), staffMembers.end(),
-            [&mdp](const shared_ptr<Staff>& st) {
-                return st->verifierMotDePasse(mdp);
+            [id](const shared_ptr<Staff>& st) {
+                return st->getIdStaff() == id;
             });
         return (it != staffMembers.end()) ? *it : nullptr;
     }
@@ -631,31 +727,31 @@ public:
             });
         return (it != reservations.end()) ? *it : nullptr;
     }
-    //hadi gha d menu client
+
     void afficherReservationsClient(shared_ptr<Client> client) const {
-        cout << "\n=== Vos Réservations ===" << endl;
+        cout << "\n=== Your Reservations ===" << endl;
         bool found = false;
         for (const auto& res : reservations) {
-            if (res->getCinClient() == client->getCin()) {
-                res->afficher();
+            if (res->getNumeroClient() == client->getNumeroClient()) {
+                res->afficher(*client);
                 cout << endl;
                 found = true;
             }
         }
-        if (!found) cout << "Aucune réservation trouvée." << endl;
+        if (!found) cout << "No reservations found." << endl;
     }
-    //hadi kat3tiha num d res katchof wach kayna kaylibiri dik room li dakhla f res w kayms7 babaha reservation mn vecteur
+
     bool annulerReservation(int numeroReservation) {
         auto res = trouverReservation(numeroReservation);
         if (!res) {
-            cout << "Réservation introuvable!" << endl;
+            cout << "Reservation not found!" << endl;
             return false;
         }
 
         auto chambre = trouverChambre(res->getNumeroChambre());
         if (chambre) {
             chambre->setOccupe(false);
-            sauvegarderChambres(); // Sauvegarde le changement d'état de la chambre (libre)
+            sauvegarderChambres();
         }
 
         auto it = remove_if(reservations.begin(), reservations.end(),
@@ -665,78 +761,590 @@ public:
 
         if (it != reservations.end()) {
             reservations.erase(it, reservations.end());
-            sauvegarderReservations(); // Sauvegarde la suppression de la réservation
-            cout << "\n✓ Réservation #" << numeroReservation << " annulée avec succès!" << endl;
+            sauvegarderReservations();
+            cout << "\n✓ Reservation #" << numeroReservation << " cancelled successfully!" << endl;
             return true;
         }
 
         return false;
     }
-    // Modifie le pourcentage de majoration d'une chambre et sauvegarde le changement
+
     bool modifierPourcentage(int numero, double nouveauPourcentage) {
         auto chambre = trouverChambre(numero);
         if (!chambre) {
-            cout << "Chambre introuvable!" << endl;
+            cout << "Room not found!" << endl;
             return false;
         }
 
         double ancienPrix = chambre->calculerPrixParNuit();
         chambre->setPourcentage(nouveauPourcentage);
-        sauvegarderChambres(); // Sauvegarde la modification du pourcentage
+        sauvegarderChambres();
 
-        cout << "\nChambre " << numero << " - Prix par nuit: " << ancienPrix
+        cout << "\nRoom " << numero << " - Price per night: " << ancienPrix
             << " DH -> " << chambre->calculerPrixParNuit() << " DH" << endl;
         return true;
     }
+
+    bool modifierPrixBase(int numero, float nouveauPrix) {
+        auto chambre = trouverChambre(numero);
+        if (!chambre) {
+            cout << "Room not found!" << endl;
+            return false;
+        }
+
+        float ancienPrix = chambre->getPrixBase();
+        chambre->setPrixbase(nouveauPrix);
+        sauvegarderChambres();
+
+        cout << "\nRoom " << numero << " - Base price: " << ancienPrix
+            << " DH -> " << nouveauPrix << " DH" << endl;
+        return true;
+    }
+
+    bool modifierInformationsClient(int numeroClient) {
+        auto client = trouverClientParNumero(numeroClient);
+        if (!client) {
+            cout << "\n❌ Client not found with number: " << numeroClient << endl;
+            return false;
+        }
+
+        cout << "\n=== Modifying Client #" << client->getNumeroClient() << " ===" << endl;
+        client->afficher();
+
+        int choix;
+        do {
+            cout << "\n[1] Modify Name" << endl;
+            cout << "[2] Modify Surname" << endl;
+            cout << "[3] Modify CIN" << endl;
+            cout << "[4] Modify Phone" << endl;
+            cout << "[5] Modify Password" << endl;
+            cout << "[6] Activate/Deactivate account" << endl;
+            cout << "[7] Reset login attempts" << endl;
+            cout << "[0] Finish modifications" << endl;
+            cout << "\nChoice: ";
+            cin >> choix;
+            cin.ignore();
+
+            switch (choix) {
+            case 1: {
+                string nouveauNom;
+                cout << "New name: ";
+                getline(cin, nouveauNom);
+                client->setNom(nouveauNom);
+                cout << "✓ Name modified!" << endl;
+                break;
+            }
+            case 2: {
+                string nouveauPrenom;
+                cout << "New surname: ";
+                getline(cin, nouveauPrenom);
+                client->setPrenom(nouveauPrenom);
+                cout << "✓ Surname modified!" << endl;
+                break;
+            }
+            case 3: {
+                string nouveauCIN;
+                cout << "New CIN: ";
+                getline(cin, nouveauCIN);
+                client->setCin(nouveauCIN);
+                cout << "✓ CIN modified!" << endl;
+                break;
+            }
+            case 4: {
+                string nouveauTel;
+                cout << "New phone: ";
+                getline(cin, nouveauTel);
+                client->setTelephone(nouveauTel);
+                cout << "✓ Phone modified!" << endl;
+                break;
+            }
+            case 5: {
+                string nouveauMdp;
+                cout << "New password: ";
+                getline(cin, nouveauMdp);
+                client->setMotDePasse(nouveauMdp);
+                cout << "✓ Password modified!" << endl;
+                break;
+            }
+            case 6: {
+                bool nouvelEtat = !client->isCompteActif();
+                client->setCompteActif(nouvelEtat);
+                cout << "✓ Account " << (nouvelEtat ? "activated" : "deactivated") << "!" << endl;
+                break;
+            }
+            case 7: {
+                client->reinitialiserTentatives();
+                client->setCompteActif(true);
+                cout << "✓ Attempts reset and account reactivated!" << endl;
+                break;
+            }
+            case 0:
+                cout << "Modifications completed." << endl;
+                break;
+            default:
+                cout << "Invalid choice!" << endl;
+            }
+        } while (choix != 0);
+
+        sauvegarderClients();
+        cout << "\n✓ Modifications saved!" << endl;
+        return true;
+    }
+
+    shared_ptr<Client> connexionClientAvecMotDePasse(string cin, string motDePasse) {
+        auto client = trouverClientParCIN(cin);
+
+        if (!client) {
+            return nullptr;
+        }
+
+        if (!client->isCompteActif()) {
+            cout << "\n❌ ACCOUNT BLOCKED!" << endl;
+            cout << "Your account has been blocked due to too many failed attempts." << endl;
+            cout << "Please contact administration to unlock your account." << endl;
+            cout << "\nPress Enter to continue...";
+            std::cin.get();
+            return nullptr;
+        }
+
+        if (!client->verifierMotDePasse(motDePasse)) {
+            client->incrementerTentatives();
+            sauvegarderClients();
+
+            int tentativesRestantes = 5 - client->getTentativesEchouees();
+
+            if (client->isCompteActif()) {
+                cout << "\n❌ Incorrect password!" << endl;
+                cout << "⚠️  Remaining attempts: " << tentativesRestantes << "/5" << endl;
+            }
+            else {
+                cout << "\n❌ ACCOUNT BLOCKED!" << endl;
+                cout << "You have exceeded the maximum number of attempts (5)." << endl;
+                cout << "Please contact administration to unlock your account." << endl;
+            }
+            cout << "\nPress Enter to continue...";
+            std::cin.get();
+            return nullptr;
+        }
+
+        client->reinitialiserTentatives();
+        sauvegarderClients();
+        return client;
+    }
+
+    shared_ptr<Staff> connexionStaffAvecMotDePasse(int idStaff, string motDePasse) {
+        auto staff = trouverStaffParId(idStaff);
+
+        if (!staff) {
+            return nullptr;
+        }
+
+        if (!staff->verifierMotDePasse(motDePasse)) {
+            cout << "\n❌ Incorrect password!" << endl;
+            cout << "\nPress Enter to continue...";
+            cin.get();
+            return nullptr;
+        }
+
+        return staff;
+    }
+
+    void HumanRessourcesManagement(shared_ptr<Staff> staff) {
+        clearScreen();
+        afficherTousStaff();
+
+        int id;
+        cout << "\nStaff ID to manage: ";
+        cin >> id;
+        cin.ignore();
+
+        auto staffMember = trouverStaffParId(id);
+        if (!staffMember) {
+            cout << "Staff member not found!" << endl;
+            return;
+        }
+
+        cout << "Enter the password for staff member " << id << ": ";
+        string password;
+        getline(cin, password);
+
+        if (!staffMember->verifierMotDePasse(password)) {
+            cout << "Incorrect password! Access denied." << endl;
+            return;
+        }
+
+        int choix;
+        do {
+            cout << "\n=== Managing Staff " << id << " ===" << endl;
+            cout << "[1] Modify ID" << endl;
+            cout << "[2] Modify poste" << endl;
+            cout << "[3] Modify password" << endl;
+            cout << "[4] Modify name" << endl;
+            cout << "[5] Modify surname" << endl;
+            cout << "[0] Return" << endl;
+            cout << "\nChoice: ";
+            cin >> choix;
+            cin.ignore();
+
+            switch (choix) {
+            case 1: {
+                int newid;
+                cout << "New ID: ";
+                cin >> newid;
+                cin.ignore();
+                staffMember->setIdStaff(newid);
+                sauvegarderStaff();
+                cout << "✓ ID modified!" << endl;
+                break;
+            }
+            case 2: {
+                string newposte;
+                cout << "New poste: ";
+                getline(cin, newposte);
+                staffMember->setPoste(newposte);
+                sauvegarderStaff();
+                cout << "✓ Poste modified!" << endl;
+                break;
+            }
+            case 3: {
+                string newpassword;
+                cout << "New password: ";
+                getline(cin, newpassword);
+                staffMember->setMotDePasse(newpassword);
+                sauvegarderStaff();
+                cout << "✓ Password modified!" << endl;
+                break;
+            }
+
+            case 4: {
+                string newname;
+                cout << "New name: ";
+                getline(cin, newname);
+                staffMember->setNom(newname);
+                sauvegarderStaff();
+                cout << "✓ Name modified!" << endl;
+                break;
+            }
+
+            case 5: {
+                string newsurname;
+                cout << "New surname: ";
+                getline(cin, newsurname);
+                staffMember->setPrenom(newsurname);
+                sauvegarderStaff();
+                cout << "✓ Surname modified!" << endl;
+                break;
+            }
+            case 0:
+                break;
+            default:
+                cout << "Invalid choice!" << endl;
+            }
+        } while (choix != 0);
+    }
+
+
 };
 
-//Menu
-//machi chi7aja gha bach fach dkhl l monu tms7 dakchi li 9bl
 void clearScreen() {
 #ifdef _WIN32
     system("cls");
+#else
+    system("clear");
 #endif
 }
 
+void printCentered(const string& text, int width = 80) {
+    int padding = (width - text.length()) / 2;
+    cout << string(padding, ' ') << text << endl;
+}
+
+void printLine(char c = '=', int width = 80) {
+    cout << string(width, c) << endl;
+}
+
 void afficherMenuPrincipal() {
-    cout << "\n╔════════════════════════════════════════╗" << endl;
-    cout << "║   SYSTEME DE GESTION HOTELIERE        ║" << endl;
-    cout << "║        VERSION ALPHA                   ║" << endl;
-    cout << "╚════════════════════════════════════════╝" << endl;
-    cout << "[1] Connexion Client" << endl;
-    cout << "[2] Connexion Staff" << endl;
-    cout << "[0] Quitter" << endl;
-    cout << "\nChoix: ";
+    clearScreen();
+    cout << endl;
+    printLine();
+    printCentered("HOTEL MANAGEMENT SYSTEM");
+    printCentered("VERSION 2.0");
+    printLine();
+    cout << endl;
+    printCentered("[1] Client Login");
+    printCentered("[2] Staff Login");
+    printCentered("[0] Exit");
+    cout << endl;
+    printLine();
+    cout << "\n";
+    printCentered("Choice: ", 40);
+    cout << "                                        ";
 }
 
 void afficherMenuClient() {
-    cout << "\n╔════════════════════════════════════════╗" << endl;
-    cout << "║          MENU CLIENT                   ║" << endl;
-    cout << "╚════════════════════════════════════════╝" << endl;
-    cout << "[1] Faire une réservation" << endl;
-    cout << "[2] Voir mes réservations" << endl;
-    cout << "[3] Annuler une réservation" << endl;
-    cout << "[0] Retour menu principal" << endl;
-    cout << "\nChoix: ";
+    cout << endl;
+    printLine();
+    printCentered("CLIENT MENU");
+    printLine();
+    cout << endl;
+    printCentered("[1] Reservation Request Entry");
+    printCentered("[2] View Reservation File");
+    printCentered("[3] Update Reservation");
+    printCentered("[4] Reservation Cancellation Procedure");
+    printCentered("[0] Return to Main Menu");
+    cout << endl;
+    printLine();
+    cout << "\nChoice: ";
 }
 
 void afficherMenuStaff() {
-    cout << "\n╔════════════════════════════════════════╗" << endl;
-    cout << "║          MENU STAFF                    ║" << endl;
-    cout << "╚════════════════════════════════════════╝" << endl;
-    cout << "[1] Voir toutes les chambres" << endl;
-    cout << "[2] Voir toutes les réservations" << endl;
-    cout << "[3] Modifier tarification" << endl;
-    cout << "[4] Annuler une réservation" << endl;
-    cout << "[0] Retour menu principal" << endl;
-    cout << "\nChoix: ";
+    cout << endl;
+    printLine();
+    printCentered("STAFF MENU");
+    printLine();
+    cout << endl;
+    printCentered("[1] Create Accommodation Unit");
+    printCentered("[2] Manage Accommodation Unit");
+    printCentered("[3] Update Client Data");
+    printCentered("[4] Reservation Management");
+    printCentered("[5] Human Resources Management");
+    printCentered("[0] Return to Main Menu");
+    cout << endl;
+    printLine();
+    cout << "\nChoice: ";
 }
+
+void fonctionnaliteSousDevelloppement() {
+    cout << "\n";
+    printLine('*');
+    printCentered("⚠️  FUNCTIONALITY UNDER DEVELOPMENT ⚠️");
+    printLine('*');
+    cout << "\nPress Enter to continue...";
+    cin.get();
+}
+
+void menuCreationChambre(Hotel& hotel) {
+    clearScreen();
+    cout << "\n=== Create Accommodation Unit ===" << endl;
+
+    int numero;
+    float prixBase;
+    int typeChoix;
+
+    cout << "\nRoom number: ";
+    cin >> numero;
+
+    cout << "\nRoom Type:" << endl;
+    cout << "[1] Single (Default: 300 DH)" << endl;
+    cout << "[2] Double (Default: 500 DH)" << endl;
+    cout << "[3] Suite (Default: 800 DH)" << endl;
+    cout << "[4] Deluxe (Default: 1000 DH)" << endl;
+    cout << "[5] Presidential (Default: 1500 DH)" << endl;
+    cout << "[6] Suite Royale (Default: 2000 DH)" << endl;
+    cout << "Choice: ";
+    cin >> typeChoix;
+
+    cout << "Base price (DH): ";
+    cin >> prixBase;
+    cin.ignore();
+
+    shared_ptr<Chambre> nouvelleChambre;
+
+    switch (typeChoix) {
+    case 1: nouvelleChambre = make_shared<ChambreSingle>(numero, prixBase); break;
+    case 2: nouvelleChambre = make_shared<ChambreDouble>(numero, prixBase); break;
+    case 3: nouvelleChambre = make_shared<ChambreSuite>(numero, prixBase); break;
+    case 4: nouvelleChambre = make_shared<ChambreDeluxe>(numero, prixBase); break;
+    case 5: nouvelleChambre = make_shared<ChambrePresidential>(numero, prixBase); break;
+    case 6: nouvelleChambre = make_shared<ChambreSuiteRoyal>(numero, prixBase); break;
+    default:
+        cout << "Invalid choice!" << endl;
+        return;
+    }
+
+    hotel.ajouterChambre(nouvelleChambre);
+    cout << "\n✓ Room created successfully!" << endl;
+}
+
+void menuGestionChambre(Hotel& hotel) {
+    clearScreen();
+    hotel.afficherToutesChambres();
+
+    int numero;
+    cout << "\nRoom number to manage: ";
+    cin >> numero;
+    cin.ignore();
+
+    auto chambre = hotel.trouverChambre(numero);
+    if (!chambre) {
+        cout << "Room not found!" << endl;
+        return;
+    }
+
+    int choix;
+    do {
+        cout << "\n=== Managing Room " << numero << " ===" << endl;
+        cout << "[1] Modify base price" << endl;
+        cout << "[2] Modify percentage" << endl;
+        cout << "[3] Change status (Available/Occupied)" << endl;
+        cout << "[0] Return" << endl;
+        cout << "\nChoice: ";
+        cin >> choix;
+        cin.ignore();
+
+        switch (choix) {
+        case 1: {
+            float nouveauPrix;
+            cout << "New base price: ";
+            cin >> nouveauPrix;
+            cin.ignore();
+            hotel.modifierPrixBase(numero, nouveauPrix);
+            break;
+        }
+        case 2: {
+            double nouveauPourcentage;
+            cout << "New percentage: ";
+            cin >> nouveauPourcentage;
+            cin.ignore();
+            hotel.modifierPourcentage(numero, nouveauPourcentage);
+            break;
+        }
+        case 3: {
+            bool nouvelEtat = !chambre->isOccupee();
+            chambre->setOccupe(nouvelEtat);
+            hotel.sauvegarderChambres();
+            cout << "✓ Room status changed to " << (nouvelEtat ? "Occupied" : "Available") << "!" << endl;
+            break;
+        }
+        case 0:
+            break;
+        default:
+            cout << "Invalid choice!" << endl;
+        }
+    } while (choix != 0);
+}
+
+
+
+void gestionreservation(Hotel& hotel, shared_ptr<Client> client) {
+    clearScreen();
+    hotel.afficherReservationsClient(client);
+
+    int numero;
+    shared_ptr<Reservation> reservation;
+    bool validReservation = false;
+
+    do {
+        cout << "\nReservation number to manage: ";
+        cin >> numero;
+        cin.ignore();
+
+        reservation = hotel.trouverReservation(numero);
+        if (!reservation || reservation->getNumeroClient() != client->getNumeroClient()) {
+            cout << "Reservation not found or does not belong to you! Please try again." << endl;
+        }
+        else {
+            validReservation = true;
+        }
+    } while (!validReservation);
+
+    int choix;
+    do {
+        cout << "\n=== Managing reservation " << numero << " ===" << endl;
+        cout << "[1] Modify stay period" << endl;
+        cout << "[2] Modify room" << endl;
+        cout << "[0] Return" << endl;
+        cout << "\nChoice: ";
+        cin >> choix;
+        cin.ignore();
+
+        switch (choix) {
+        case 1: {
+            string nouvelleDateDebut, nouvelleDateFin;
+            cout << "New start date (dd/mm/yyyy): ";
+            getline(cin, nouvelleDateDebut);
+            cout << "New end date (dd/mm/yyyy): ";
+            getline(cin, nouvelleDateFin);
+
+            int nouveauxJours = calculerNombreJours(nouvelleDateDebut, nouvelleDateFin);
+            if (nouveauxJours <= 0) {
+                cout << "Invalid dates!" << endl;
+                break;
+            }
+
+            auto chambre = hotel.trouverChambre(reservation->getNumeroChambre());
+            if (!chambre) {
+                cout << "Room not found!" << endl;
+                break;
+            }
+
+            double nouveauPrixTotal = chambre->calculerPrixTotal(nouveauxJours);
+
+            reservation->setDateDebut(nouvelleDateDebut);
+            reservation->setDateFin(nouvelleDateFin);
+            reservation->setNombreJours(nouveauxJours);
+            reservation->setPrixTotal(nouveauPrixTotal);
+
+            hotel.sauvegarderReservations();
+            cout << "✓ Stay period modified successfully!" << endl;
+            break;
+        }
+        case 2: {
+            hotel.afficherChambresLibres();
+            auto roomlist = hotel.getChambresLibres();
+            if (roomlist.empty()) {
+                break;
+            }
+            int nouveauNumeroChambre;
+            cout << "New room number: ";
+            cin >> nouveauNumeroChambre;
+            cin.ignore();
+
+            auto nouvelleChambre = hotel.trouverChambre(nouveauNumeroChambre);
+            if (!nouvelleChambre) {
+                cout << "Room not found!" << endl;
+                break;
+            }
+
+            if (nouvelleChambre->isOccupee()) {
+                cout << "Room already occupied!" << endl;
+                break;
+            }
+
+            // Free old room
+            auto ancienneChambre = hotel.trouverChambre(reservation->getNumeroChambre());
+            if (ancienneChambre) {
+                ancienneChambre->setOccupe(false);
+            }
+
+            // Occupy new room
+            nouvelleChambre->setOccupe(true);
+
+            double nouveauPrixTotal = nouvelleChambre->calculerPrixTotal(reservation->getNombreJours());
+
+            reservation->setNumeroChambre(nouveauNumeroChambre);
+            reservation->setPrixTotal(nouveauPrixTotal);
+
+            hotel.sauvegarderReservations();
+            hotel.sauvegarderChambres();
+            cout << "✓ Room modified successfully!" << endl;
+            break;
+        }
+
+        case 0:
+            break;
+        default:
+            cout << "Invalid choice!" << endl;
+        }
+    } while (choix != 0);
+}
+
 
 void menuClient(Hotel& hotel, shared_ptr<Client> client) {
     int choix;
     do {
         clearScreen();
-        cout << "\nBienvenue " << *client << "!" << endl;
+        cout << "\nWelcome " << *client << "!" << endl;
         afficherMenuClient();
         cin >> choix;
         cin.ignore();
@@ -744,53 +1352,56 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
         switch (choix) {
         case 1: {
             hotel.afficherChambresLibres();
+            auto roomlist = hotel.getChambresLibres();
+            if (roomlist.empty()) {
+                break;
+            }
 
             int numChambre;
             string dateDebut, dateFin;
 
-            cout << "\nNuméro de chambre: ";
+            cout << "\nRoom number: ";
             cin >> numChambre;
             cin.ignore();
 
             auto chambre = hotel.trouverChambre(numChambre);
             if (!chambre) {
-                cout << "Chambre introuvable!" << endl;
+                cout << "Room not found!" << endl;
                 break;
             }
 
             if (chambre->isOccupee()) {
-                cout << "Chambre déjà occupée!" << endl;
+                cout << "Room already occupied!" << endl;
                 break;
             }
 
-            cout << "Date de début (jj/mm/aaaa): ";
+            cout << "Start date (dd/mm/yyyy): ";
             getline(cin, dateDebut);
-            cout << "Date de fin (jj/mm/aaaa): ";
+            cout << "End date (dd/mm/yyyy): ";
             getline(cin, dateFin);
 
             int nombreJours = calculerNombreJours(dateDebut, dateFin);
             if (nombreJours <= 0) {
-                cout << "Dates invalides!" << endl;
+                cout << "Invalid dates!" << endl;
                 break;
             }
-
 
             double prixParNuit = chambre->calculerPrixParNuit();
             double prixTotal = chambre->calculerPrixTotal(nombreJours);
 
-            auto res = make_shared<Reservation>(client->getCin(), numChambre, dateDebut, dateFin, nombreJours, prixTotal);
+            auto res = make_shared<Reservation>(client->getNumeroClient(), numChambre, dateDebut, dateFin, nombreJours, prixTotal);
             hotel.ajouterReservation(res);
             chambre->setOccupe(true);
-            hotel.sauvegarderReservations(); // Sauvegarde la nouvelle réservation
-            hotel.sauvegarderChambres(); // Sauvegarde le changement d'état de la chambre (occupée)
+            hotel.sauvegarderReservations();
+            hotel.sauvegarderChambres();
 
-            cout << "\n✓ Réservation créée avec succès!" << endl;
-            cout << "Numéro de réservation: " << res->getNumeroReservation() << endl;
-            cout << "Chambre: " << numChambre << " [" << chambre->getNomType() << "]" << endl;
-            cout << "Période: " << dateDebut << " -> " << dateFin << endl;
-            cout << "Nombre de nuits: " << nombreJours << endl;
-            cout << "Prix par nuit: " << prixParNuit << " DH" << endl;
-            cout << "Prix total: " << prixTotal << " DH" << endl;
+            cout << "\n✓ Reservation created successfully!" << endl;
+            cout << "Reservation number: " << res->getNumeroReservation() << endl;
+            cout << "Room: " << numChambre << " [" << chambre->getNomType() << "]" << endl;
+            cout << "Period: " << dateDebut << " -> " << dateFin << endl;
+            cout << "Number of nights: " << nombreJours << endl;
+            cout << "Price per night: " << prixParNuit << " DH" << endl;
+            cout << "Total price: " << prixTotal << " DH" << endl;
             break;
         }
 
@@ -800,18 +1411,26 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
         }
 
         case 3: {
+            gestionreservation(hotel, client);
+            cout << "\nPress Enter to continue...";
+            std::cin.get();
+            break;
+        }
+
+        case 4: {
             hotel.afficherReservationsClient(client);
 
             int numReservation;
-            cout << "\nNuméro de réservation à annuler: ";
+            cout << "\nReservation number to cancel: ";
             cin >> numReservation;
             cin.ignore();
 
+
             int confirmation;
-            cout << "Êtes-vous sûr de vouloir annuler la réservation #" << numReservation << "?" << endl;
-            cout << "[1] Oui, annuler" << endl;
-            cout << "[0] Non, retour" << endl;
-            cout << "Choix: ";
+            cout << "Are you sure you want to cancel reservation #" << numReservation << "?" << endl;
+            cout << "[1] Yes, cancel" << endl;
+            cout << "[0] No, return" << endl;
+            cout << "Choice: ";
             cin >> confirmation;
             cin.ignore();
 
@@ -819,22 +1438,22 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
                 hotel.annulerReservation(numReservation);
             }
             else {
-                cout << "Annulation annulée." << endl;
+                cout << "Cancellation cancelled." << endl;
             }
             break;
         }
 
         case 0:
-            cout << "Retour au menu principal..." << endl;
+            cout << "Returning to main menu..." << endl;
             break;
 
         default:
-            cout << "❌ Choix invalide!" << endl;
+            cout << "Invalid choice!" << endl;
         }
 
         if (choix != 0) {
-            cout << "\nAppuyez sur Entrée pour continuer...";
-            cin.get();
+            cout << "\nPress Enter to continue...";
+            std::cin.get();
         }
     } while (choix != 0);
 }
@@ -843,33 +1462,37 @@ void menuStaff(Hotel& hotel, shared_ptr<Staff> staff) {
     int choix;
     do {
         clearScreen();
-        cout << "\nBienvenue " << *staff << " [" << staff->getPoste() << "]" << endl;
+        cout << "\nWelcome " << *staff << " [" << staff->getPoste() << "]" << endl;
         afficherMenuStaff();
         cin >> choix;
         cin.ignore();
 
         switch (choix) {
-        case 1:
-            hotel.afficherToutesChambres();
+        case 1: {
+            menuCreationChambre(hotel);
+            cout << "\nPress Enter to continue...";
+            std::cin.get();
             break;
+        }
 
-        case 2:
-            hotel.afficherToutesReservations();
+        case 2: {
+            menuGestionChambre(hotel);
+            cout << "\nPress Enter to continue...";
+            std::cin.get();
             break;
+        }
 
         case 3: {
-            hotel.afficherToutesChambres();
+            hotel.afficherTousClients();
 
-            int numChambre;
-            double nouveauPourcentage;
-
-            cout << "\nNuméro de chambre: ";
-            cin >> numChambre;
-            cout << "Nouveau pourcentage de majoration: ";
-            cin >> nouveauPourcentage;
+            int numeroClient;
+            cout << "\nClient number to modify: ";
+            cin >> numeroClient;
             cin.ignore();
 
-            hotel.modifierPourcentage(numChambre, nouveauPourcentage);
+            hotel.modifierInformationsClient(numeroClient);
+            cout << "\nPress Enter to continue...";
+            std::cin.get();
             break;
         }
 
@@ -877,15 +1500,15 @@ void menuStaff(Hotel& hotel, shared_ptr<Staff> staff) {
             hotel.afficherToutesReservations();
 
             int numReservation;
-            cout << "\nNuméro de réservation à annuler: ";
+            cout << "\nReservation number to cancel: ";
             cin >> numReservation;
             cin.ignore();
 
             int confirmation;
-            cout << "Êtes-vous sûr de vouloir annuler la réservation #" << numReservation << "?" << endl;
-            cout << "[1] Oui, annuler" << endl;
-            cout << "[0] Non, retour" << endl;
-            cout << "Choix: ";
+            cout << "Are you sure you want to cancel reservation #" << numReservation << "?" << endl;
+            cout << "[1] Yes, cancel" << endl;
+            cout << "[0] No, return" << endl;
+            cout << "Choice: ";
             cin >> confirmation;
             cin.ignore();
 
@@ -893,90 +1516,169 @@ void menuStaff(Hotel& hotel, shared_ptr<Staff> staff) {
                 hotel.annulerReservation(numReservation);
             }
             else {
-                cout << "Annulation annulée." << endl;
+                cout << "Cancellation cancelled." << endl;
             }
+
+            cout << "\nPress Enter to continue...";
+            std::cin.get();
             break;
         }
 
+        case 5: {
+            hotel.HumanRessourcesManagement(staff);
+            break;
+        }
 
         case 0:
-            cout << "Retour au menu principal..." << endl;
+            cout << "Returning to main menu..." << endl;
             break;
 
         default:
-            cout << "Choix invalide!" << endl;
+            cout << "Invalid choice!" << endl;
+            cout << "\nPress Enter to continue...";
+            std::cin.get();
         }
 
-        if (choix != 0) {
-            cout << "\nAppuyez sur Entrée pour continuer...";
-            cin.get();
-        }
     } while (choix != 0);
 }
 
 int main() {
     Hotel hotel;
     int choix;
+
     do {
-        clearScreen();
         afficherMenuPrincipal();
         cin >> choix;
         cin.ignore();
 
         switch (choix) {
+        case 0: {
+            clearScreen();
+            cout << "\nThank you for using the Hotel Management System!" << endl;
+            cout << "Goodbye!" << endl;
+            break;
+        }
+
         case 1: {
-            string cinInput;
-            cout << "\nEntrez votre CIN: ";
-            getline(cin, cinInput);
+            string cinClient;
+            string motDePasse;
 
-            auto client = hotel.trouverClientParCIN(cinInput);
-            if (client) {
-                menuClient(hotel, client);
-            }
-            else {
-                cout << "\n=== Nouveau Client ===" << endl;
-                string nom, prenom, tel;
-                cout << "Nom: ";
-                getline(cin, nom);
-                cout << "Prénom: ";
-                getline(cin, prenom);
-                cout << "Téléphone: ";
-                getline(cin, tel);
+            bool loginSuccess = false;
 
-                auto nouveauClient = make_shared<Client>(nom, prenom, cinInput, tel);
-                hotel.ajouterClient(nouveauClient);
-                cout << "\nCompte créé" << endl;
-                cout << "\nAppuyez sur Entrée pour continuer...";
-                cin.get();
-                menuClient(hotel, nouveauClient);
+            while (!loginSuccess) {
+                clearScreen();
+                cout << endl;
+                printLine();
+                printCentered("CLIENT LOGIN");
+                printLine();
+                cout << endl;
+
+                cout << "CIN: ";
+                cin >> cinClient;
+                cin.ignore();
+
+                auto client = hotel.trouverClientParCIN(cinClient);
+
+                if (!client) {
+                    cout << "\n❌ Client not found!" << endl;
+                    cout << "\n[1] Try again" << endl;
+                    cout << "[2] Create new account" << endl;
+                    cout << "[0] Return to main menu" << endl;
+                    cout << "\nChoice: ";
+                    int choixClient;
+                    cin >> choixClient;
+                    cin.ignore();
+
+                    if (choixClient == 2) {
+                        clearScreen();
+                        cout << "\n=== New Client Registration ===" << endl;
+                        string nom, prenom, cinNew, tel, mdp;
+                        cout << "Name: ";
+                        getline(std::cin, nom);
+                        cout << "Surname: ";
+                        getline(std::cin, prenom);
+                        cout << "CIN: ";
+                        getline(std::cin, cinNew);
+                        cout << "Phone: ";
+                        getline(std::cin, tel);
+                        cout << "Password: ";
+                        getline(std::cin, mdp);
+
+                        auto nouveauClient = make_shared<Client>(nom, prenom, cinNew, tel, mdp);
+                        hotel.ajouterClient(nouveauClient);
+                        cout << "\n✓ Account created successfully!" << endl;
+                        cout << "Your CIN is: " << cinNew << endl;
+                        cout << "\nPress Enter to login...";
+                        std::cin.get();
+                    }
+                    else if (choixClient == 0) {
+                        break;
+                    }
+                    continue;
+                }
+
+                cout << "Password: ";
+                getline(cin, motDePasse);
+
+                auto clientConnecte = hotel.connexionClientAvecMotDePasse(cinClient, motDePasse);
+                if (clientConnecte) {
+                    loginSuccess = true;
+                    menuClient(hotel, clientConnecte);
+                }
             }
             break;
         }
 
         case 2: {
-            string mdp;
-            cout << "\n Mot de passe: ";
-            getline(cin, mdp);
+            int idStaff;
+            string motDePasse;
 
-            auto staff = hotel.trouverStaffParMotDePasse(mdp);
-            if (staff) {
-                menuStaff(hotel, staff);
-            }
-            else {
-                cout << "Mot de passe incorrect!" << endl;
-                cout << "\nAppuyez sur Entrée pour continuer...";
-                cin.get();
+            bool loginSuccess = false;
+
+            while (!loginSuccess) {
+                clearScreen();
+                cout << endl;
+                printLine();
+                printCentered("STAFF LOGIN");
+                printLine();
+                cout << endl;
+
+                cout << "Staff ID: ";
+                cin >> idStaff;
+                cin.ignore();
+
+                cout << "Password: ";
+                getline(cin, motDePasse);
+
+                auto staffConnecte = hotel.connexionStaffAvecMotDePasse(idStaff, motDePasse);
+                if (staffConnecte) {
+                    loginSuccess = true;
+                    menuStaff(hotel, staffConnecte);
+                }
+                else {
+                    cout << "\n[1] Try again" << endl;
+                    cout << "[0] Return to main menu" << endl;
+                    cout << "\nChoice: ";
+                    int choixRetry;
+                    cin >> choixRetry;
+                    cin.ignore();
+
+                    if (choixRetry == 0) {
+                        break;
+                    }
+                }
             }
             break;
         }
+
         default:
-            cout << "Choix invalide!" << endl;
-            cout << "\nAppuyez sur Entrée pour continuer...";
-            cin.get();
+            clearScreen();
+            cout << "\n❌ Invalid choice!" << endl;
+            cout << "\nPress Enter to continue...";
+            std::cin.get();
         }
     } while (choix != 0);
 
-    // Sauvegarde toutes les données avant de quitter le programme
     hotel.sauvegarderTout();
     return 0;
 }
