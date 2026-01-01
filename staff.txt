@@ -1,0 +1,2 @@
+1|Admin|User|ADMIN001|0600000000|Manager|admin123
+2|John|Doe|STAFF001|0611111111|Receptionist|pass123
