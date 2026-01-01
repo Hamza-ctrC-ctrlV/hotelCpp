@@ -26,7 +26,7 @@ The system separates responsibilities clearly and documents intent at every leve
 ---
 
 ## 🗂 Project Structure
-
+```text
 .
 ├── main.cpp                # Application entry point
 ├── clients.txt             # Persistent client storage
@@ -34,7 +34,7 @@ The system separates responsibilities clearly and documents intent at every leve
 ├── chambres.txt            # Persistent rooms storage
 ├── reservations.txt        # Persistent reservations storage
 └── README.md               # Project documentation
-
+```
 ---
 
 ## ▶ How to Run
