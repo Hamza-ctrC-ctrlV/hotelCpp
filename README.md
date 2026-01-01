@@ -1,47 +1,3 @@
-#Hotel Management System (C++ OOP)
-
-#Description
-
-#Features
-
-
-Account Locking: Clients are automatically blocked after 5 failed login attempts to prevent unauthorized access.
-
-Dynamic Room Management: * Supports multiple room types (Single, Double, Suite, Deluxe, Presidential, Royal Suite).
-
-Calculates real-time pricing based on a base rate plus a percentage modifier.
-
-Reservation System: * Automated duration calculation between two dates.
-
-Tracks room occupancy and links reservations to specific client IDs.
-
-Persistent Storage: * Automated data saving and loading using text files (clients.txt, chambres.txt, staff.txt, reservations.txt).
-
-Uses a custom pipe-separated (|) serialization format.
-
-#Technologies
-Language: C++
-
-Library Focus: fstream (File I/O), vector (Dynamic collections), algorithm, and sstream (Data parsing).
-
-#Architecture Overview
-The project follows a modular hierarchy:
-
-Personne (Abstract Base): Inherited by Client and Staff.
-
-Chambre (Abstract Base): Inherited by specific room types with unique base prices.
-
-Hotel (Manager Class): The "Controller" that handles all logic, file processing, and data vectors.
-
-#How to Run
-
-Bash
-g++ main.cpp -o hotel
-Execute:
-Bash
-./hotel
-
-
 # Hotel Management System (C++)
 
 > A comprehensive C++ console application built on Object-Oriented Programming principles. It manages the lifecycle of hotel operations including secure client authentication, dynamic room pricing, and staff-level administrative controls.
@@ -71,12 +27,13 @@ The system separates responsibilities clearly and documents intent at every leve
 
 ## 🗂 Project Structure
 
+```text
 .
 ├── main.cpp                # Application entry point
 ├── clients.txt             # Persistent client storage
 ├── staff.txt               # Persistent staff storage
-├── chambres.txt             # Persistent rooms storage
-├── reservations.txt         # Persistent reservations storage
+├── chambres.txt            # Persistent rooms storage
+├── reservations.txt        # Persistent reservations storage
 └── README.md               # Project documentation
 
 
