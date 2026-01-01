@@ -7,6 +7,7 @@
 #include <ctime>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 using namespace std;
 
 //Classes Personne, Client, Staff
@@ -190,20 +191,30 @@ int Staff::compteurStaff = 0;
 void clearScreen();
 
 int calculerNombreJours(const string& dateDebut, const string& dateFin) {
-    int jour1, mois1, annee1;
-    int jour2, mois2, annee2;
-    char slash;
-
-    stringstream ss1(dateDebut);
-    ss1 >> jour1 >> slash >> mois1 >> slash >> annee1;
-
-    stringstream ss2(dateFin);
-    ss2 >> jour2 >> slash >> mois2 >> slash >> annee2;
-
-    int totalDays1 = annee1 * 365 + mois1 * 30 + jour1;
-    int totalDays2 = annee2 * 365 + mois2 * 30 + jour2;
-
-    return totalDays2 - totalDays1;
+    try {
+        int jour1, mois1, annee1;
+        int jour2, mois2, annee2;
+        char slash;
+        stringstream ss1(dateDebut);
+        ss1 >> jour1 >> slash >> mois1 >> slash >> annee1;
+        stringstream ss2(dateFin);
+        ss2 >> jour2 >> slash >> mois2 >> slash >> annee2;
+        int totalDays1 = annee1 * 365 + mois1 * 30 + jour1;
+        int totalDays2 = annee2 * 365 + mois2 * 30 + jour2;
+        if (totalDays2 < totalDays1) {
+            throw logic_error("End date cannot be before start date.");
+        }
+        if (totalDays2 == totalDays1) {
+            throw logic_error("Stay must be at least one night.");
+        }
+        return totalDays2 - totalDays1;
+    }
+    catch (const logic_error& e) {
+        throw;
+    }
+    catch (const exception& e) {
+        throw runtime_error("Invalid date format (use dd/mm/yyyy)");
+    }
 }
 
 //Classes Chambre
@@ -449,7 +460,6 @@ public:
         }
 
         string line;
-        // Skip header lines
         while (getline(file, line)) {
             if (line.empty() || line[0] == '#') {
                 continue;
@@ -466,7 +476,6 @@ public:
         }
 
         string line;
-        // Skip header lines
         while (getline(file, line)) {
             if (line.empty() || line[0] == '#') {
                 continue;
@@ -519,7 +528,6 @@ public:
         }
 
         string line;
-        // Skip header lines
         while (getline(file, line)) {
             if (line.empty() || line[0] == '#') {
                 continue;
@@ -539,7 +547,6 @@ public:
         }
 
         string line;
-        // Skip header lines
         while (getline(file, line)) {
             if (line.empty() || line[0] == '#') {
                 continue;
@@ -804,7 +811,7 @@ public:
     bool modifierInformationsClient(int numeroClient) {
         auto client = trouverClientParNumero(numeroClient);
         if (!client) {
-            cout << "\n❌ Client not found with number: " << numeroClient << endl;
+            cout << "\nClient not found with number: " << numeroClient << endl;
             return false;
         }
 
@@ -822,8 +829,23 @@ public:
             cout << "[7] Reset login attempts" << endl;
             cout << "[0] Finish modifications" << endl;
             cout << "\nChoice: ";
-            cin >> choix;
-            cin.ignore();
+
+            try {
+                cin >> choix;
+                if (cin.fail()) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid input! Please enter a number." << endl;
+                    continue;
+                }
+                cin.ignore();
+            }
+            catch (...) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                continue;
+            }
 
             switch (choix) {
             case 1: {
@@ -831,7 +853,7 @@ public:
                 cout << "New name: ";
                 getline(cin, nouveauNom);
                 client->setNom(nouveauNom);
-                cout << "✓ Name modified!" << endl;
+                cout << "Name modified!" << endl;
                 break;
             }
             case 2: {
@@ -839,7 +861,7 @@ public:
                 cout << "New surname: ";
                 getline(cin, nouveauPrenom);
                 client->setPrenom(nouveauPrenom);
-                cout << "✓ Surname modified!" << endl;
+                cout << "Surname modified!" << endl;
                 break;
             }
             case 3: {
@@ -847,7 +869,7 @@ public:
                 cout << "New CIN: ";
                 getline(cin, nouveauCIN);
                 client->setCin(nouveauCIN);
-                cout << "✓ CIN modified!" << endl;
+                cout << "CIN modified!" << endl;
                 break;
             }
             case 4: {
@@ -855,7 +877,7 @@ public:
                 cout << "New phone: ";
                 getline(cin, nouveauTel);
                 client->setTelephone(nouveauTel);
-                cout << "✓ Phone modified!" << endl;
+                cout << "Phone modified!" << endl;
                 break;
             }
             case 5: {
@@ -863,19 +885,19 @@ public:
                 cout << "New password: ";
                 getline(cin, nouveauMdp);
                 client->setMotDePasse(nouveauMdp);
-                cout << "✓ Password modified!" << endl;
+                cout << "Password modified!" << endl;
                 break;
             }
             case 6: {
                 bool nouvelEtat = !client->isCompteActif();
                 client->setCompteActif(nouvelEtat);
-                cout << "✓ Account " << (nouvelEtat ? "activated" : "deactivated") << "!" << endl;
+                cout << "Account " << (nouvelEtat ? "activated" : "deactivated") << "!" << endl;
                 break;
             }
             case 7: {
                 client->reinitialiserTentatives();
                 client->setCompteActif(true);
-                cout << "✓ Attempts reset and account reactivated!" << endl;
+                cout << "Attempts reset and account reactivated!" << endl;
                 break;
             }
             case 0:
@@ -887,7 +909,7 @@ public:
         } while (choix != 0);
 
         sauvegarderClients();
-        cout << "\n✓ Modifications saved!" << endl;
+        cout << "\nModifications saved!" << endl;
         return true;
     }
 
@@ -899,7 +921,7 @@ public:
         }
 
         if (!client->isCompteActif()) {
-            cout << "\n❌ ACCOUNT BLOCKED!" << endl;
+            cout << "\nACCOUNT BLOCKED!" << endl;
             cout << "Your account has been blocked due to too many failed attempts." << endl;
             cout << "Please contact administration to unlock your account." << endl;
             cout << "\nPress Enter to continue...";
@@ -914,11 +936,11 @@ public:
             int tentativesRestantes = 5 - client->getTentativesEchouees();
 
             if (client->isCompteActif()) {
-                cout << "\n❌ Incorrect password!" << endl;
-                cout << "⚠️  Remaining attempts: " << tentativesRestantes << "/5" << endl;
+                cout << "\nIncorrect password!" << endl;
+                cout << "Remaining attempts: " << tentativesRestantes << "/5" << endl;
             }
             else {
-                cout << "\n❌ ACCOUNT BLOCKED!" << endl;
+                cout << "\nACCOUNT BLOCKED!" << endl;
                 cout << "You have exceeded the maximum number of attempts (5)." << endl;
                 cout << "Please contact administration to unlock your account." << endl;
             }
@@ -940,7 +962,7 @@ public:
         }
 
         if (!staff->verifierMotDePasse(motDePasse)) {
-            cout << "\n❌ Incorrect password!" << endl;
+            cout << "\nIncorrect password!" << endl;
             cout << "\nPress Enter to continue...";
             cin.get();
             return nullptr;
@@ -955,10 +977,24 @@ public:
 
         int id;
         cout << "\nStaff ID to manage: ";
-        cin >> id;
-        cin.ignore();
+        try {
+            cin >> id;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                return;
+            }
+            cin.ignore();
+        }
+        catch (...) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input!" << endl;
+            return;
+        }
 
-    auto staffMember = trouverStaffParId(id);
+        auto staffMember = trouverStaffParId(id);
         if (!staffMember) {
             cout << "Staff member not found!" << endl;
             return;
@@ -983,18 +1019,41 @@ public:
             cout << "[5] Modify surname" << endl;
             cout << "[0] Return" << endl;
             cout << "\nChoice: ";
-            cin >> choix;
-            cin.ignore();
+
+            try {
+                cin >> choix;
+                if (cin.fail()) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid input!" << endl;
+                    continue;
+                }
+                cin.ignore();
+            }
+            catch (...) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                continue;
+            }
 
             switch (choix) {
             case 1: {
                 int newid;
                 cout << "New ID: ";
-                cin >> newid;
-                cin.ignore();
-                staffMember->setIdStaff(newid);
-                sauvegarderStaff();
-                cout << "✓ ID modified!" << endl;
+                try {
+                    cin >> newid;
+                    if (cin.fail()) throw exception();
+                    cin.ignore();
+                    staffMember->setIdStaff(newid);
+                    sauvegarderStaff();
+                    cout << "ID modified!" << endl;
+                }
+                catch (...) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid input!" << endl;
+                }
                 break;
             }
             case 2: {
@@ -1003,7 +1062,7 @@ public:
                 getline(cin, newposte);
                 staffMember->setPoste(newposte);
                 sauvegarderStaff();
-                cout << "✓ Poste modified!" << endl;
+                cout << "Poste modified!" << endl;
                 break;
             }
             case 3: {
@@ -1012,7 +1071,7 @@ public:
                 getline(cin, newpassword);
                 staffMember->setMotDePasse(newpassword);
                 sauvegarderStaff();
-                cout << "✓ Password modified!" << endl;
+                cout << "Password modified!" << endl;
                 break;
             }
 
@@ -1022,7 +1081,7 @@ public:
                 getline(cin, newname);
                 staffMember->setNom(newname);
                 sauvegarderStaff();
-                cout << "✓ Name modified!" << endl;
+                cout << "Name modified!" << endl;
                 break;
             }
 
@@ -1032,7 +1091,7 @@ public:
                 getline(cin, newsurname);
                 staffMember->setPrenom(newsurname);
                 sauvegarderStaff();
-                cout << "✓ Surname modified!" << endl;
+                cout << "Surname modified!" << endl;
                 break;
             }
             case 0:
@@ -1117,7 +1176,7 @@ void afficherMenuStaff() {
 void fonctionnaliteSousDevelloppement() {
     cout << "\n";
     printLine('*');
-    printCentered("⚠️  FUNCTIONALITY UNDER DEVELOPMENT ⚠️");
+    printCentered("⚠FUNCTIONALITY UNDER DEVELOPMENT ⚠️");
     printLine('*');
     cout << "\nPress Enter to continue...";
     cin.get();
@@ -1132,42 +1191,88 @@ void menuCreationChambre(Hotel& hotel) {
     int typeChoix;
 
     cout << "\nRoom number (select [0] to exit): ";
-    cin >> numero;
-    cin.ignore();
-
-    while(numero!=0){
-
-    cout << "\nRoom Type:" << endl;
-    cout << "[1] Single (Default: 300 DH)" << endl;
-    cout << "[2] Double (Default: 500 DH)" << endl;
-    cout << "[3] Suite (Default: 800 DH)" << endl;
-    cout << "[4] Deluxe (Default: 1000 DH)" << endl;
-    cout << "[5] Presidential (Default: 1500 DH)" << endl;
-    cout << "[6] Suite Royale (Default: 2000 DH)" << endl;
-    cout << "Choice: ";
-    cin >> typeChoix;
-
-    cout << "Base price (DH): ";
-    cin >> prixBase;
-    cin.ignore();
-
-    shared_ptr<Chambre> nouvelleChambre;
-
-    switch (typeChoix) {
-    case 1: nouvelleChambre = make_shared<ChambreSingle>(numero, prixBase); break;
-    case 2: nouvelleChambre = make_shared<ChambreDouble>(numero, prixBase); break;
-    case 3: nouvelleChambre = make_shared<ChambreSuite>(numero, prixBase); break;
-    case 4: nouvelleChambre = make_shared<ChambreDeluxe>(numero, prixBase); break;
-    case 5: nouvelleChambre = make_shared<ChambrePresidential>(numero, prixBase); break;
-    case 6: nouvelleChambre = make_shared<ChambreSuiteRoyal>(numero, prixBase); break;
-    default:
-        cout << "Invalid choice!" << endl;
+    try {
+        cin >> numero;
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input!" << endl;
+            return;
+        }
+        cin.ignore();
+    }
+    catch (...) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid input!" << endl;
         return;
     }
 
-    hotel.ajouterChambre(nouvelleChambre);
-    cout << "\n✓ Room created successfully!" << endl;
-}}
+    while (numero != 0) {
+
+        cout << "\nRoom Type:" << endl;
+        cout << "[1] Single (Default: 300 DH)" << endl;
+        cout << "[2] Double (Default: 500 DH)" << endl;
+        cout << "[3] Suite (Default: 800 DH)" << endl;
+        cout << "[4] Deluxe (Default: 1000 DH)" << endl;
+        cout << "[5] Presidential (Default: 1500 DH)" << endl;
+        cout << "[6] Suite Royale (Default: 2000 DH)" << endl;
+        cout << "Choice: ";
+        try {
+            cin >> typeChoix;
+            if (cin.fail()) throw exception();
+            cin.ignore();
+        }
+        catch (...) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input!" << endl;
+            continue;
+        }
+
+        cout << "Base price (DH): ";
+        try {
+            cin >> prixBase;
+            if (cin.fail()) throw exception();
+            cin.ignore();
+        }
+        catch (...) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input!" << endl;
+            continue;
+        }
+
+        shared_ptr<Chambre> nouvelleChambre;
+
+        switch (typeChoix) {
+        case 1: nouvelleChambre = make_shared<ChambreSingle>(numero, prixBase); break;
+        case 2: nouvelleChambre = make_shared<ChambreDouble>(numero, prixBase); break;
+        case 3: nouvelleChambre = make_shared<ChambreSuite>(numero, prixBase); break;
+        case 4: nouvelleChambre = make_shared<ChambreDeluxe>(numero, prixBase); break;
+        case 5: nouvelleChambre = make_shared<ChambrePresidential>(numero, prixBase); break;
+        case 6: nouvelleChambre = make_shared<ChambreSuiteRoyal>(numero, prixBase); break;
+        default:
+            cout << "Invalid choice!" << endl;
+            return;
+        }
+
+        hotel.ajouterChambre(nouvelleChambre);
+        cout << "\nRoom created successfully!" << endl;
+
+        cout << "\nRoom number (select [0] to exit): ";
+        try {
+            cin >> numero;
+            if (cin.fail()) throw exception();
+            cin.ignore();
+        }
+        catch (...) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            break;
+        }
+    }
+}
 
 void menuGestionChambre(Hotel& hotel) {
     clearScreen();
@@ -1175,59 +1280,104 @@ void menuGestionChambre(Hotel& hotel) {
 
     int numero;
     cout << "\nRoom number to manage (select [0] to exit): ";
-    cin >> numero;
-    cin.ignore();
-
-   while(numero!=0){
-
-    auto chambre = hotel.trouverChambre(numero);
-    if (!chambre) {
-        cout << "Room not found!" << endl;
+    try {
+        cin >> numero;
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input!" << endl;
+            return;
+        }
+        cin.ignore();
+    }
+    catch (...) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid input!" << endl;
         return;
     }
 
-    int choix;
-    do {
-        cout << "\n=== Managing Room " << numero << " ===" << endl;
-        cout << "[1] Modify base price" << endl;
-        cout << "[2] Modify percentage" << endl;
-        cout << "[3] Change status (Available/Occupied)" << endl;
-        cout << "[0] Return" << endl;
-        cout << "\nChoice: ";
-        cin >> choix;
-        cin.ignore();
+    while (numero != 0) {
 
-        switch (choix) {
-        case 1: {
-            float nouveauPrix;
-            cout << "New base price: ";
-            cin >> nouveauPrix;
-            cin.ignore();
-            hotel.modifierPrixBase(numero, nouveauPrix);
-            break;
+        auto chambre = hotel.trouverChambre(numero);
+        if (!chambre) {
+            cout << "Room not found!" << endl;
+            return;
         }
-        case 2: {
-            double nouveauPourcentage;
-            cout << "New percentage: ";
-            cin >> nouveauPourcentage;
-            cin.ignore();
-            hotel.modifierPourcentage(numero, nouveauPourcentage);
-            break;
-        }
-        case 3: {
-            bool nouvelEtat = !chambre->isOccupee();
-            chambre->setOccupe(nouvelEtat);
-            hotel.sauvegarderChambres();
-            cout << "✓ Room status changed to " << (nouvelEtat ? "Occupied" : "Available") << "!" << endl;
-            break;
-        }
-        case 0:
-            break;
-        default:
-            cout << "Invalid choice!" << endl;
-        }
-    } while (choix != 0);
-}
+
+        int choix;
+        do {
+            cout << "\n=== Managing Room " << numero << " ===" << endl;
+            cout << "[1] Modify base price" << endl;
+            cout << "[2] Modify percentage" << endl;
+            cout << "[3] Change status (Available/Occupied)" << endl;
+            cout << "[0] Return" << endl;
+            cout << "\nChoice: ";
+
+            try {
+                cin >> choix;
+                if (cin.fail()) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid input!" << endl;
+                    continue;
+                }
+                cin.ignore();
+            }
+            catch (...) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                continue;
+            }
+
+            switch (choix) {
+            case 1: {
+                float nouveauPrix;
+                cout << "New base price: ";
+                try {
+                    cin >> nouveauPrix;
+                    if (cin.fail()) throw exception();
+                    cin.ignore();
+                    hotel.modifierPrixBase(numero, nouveauPrix);
+                }
+                catch (...) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid input!" << endl;
+                }
+                break;
+            }
+            case 2: {
+                double nouveauPourcentage;
+                cout << "New percentage: ";
+                try {
+                    cin >> nouveauPourcentage;
+                    if (cin.fail()) throw exception();
+                    cin.ignore();
+                    hotel.modifierPourcentage(numero, nouveauPourcentage);
+                }
+                catch (...) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid input!" << endl;
+                }
+                break;
+            }
+            case 3: {
+                bool nouvelEtat = !chambre->isOccupee();
+                chambre->setOccupe(nouvelEtat);
+                hotel.sauvegarderChambres();
+                cout << "Room status changed to " << (nouvelEtat ? "Occupied" : "Available") << "!" << endl;
+                break;
+            }
+            case 0:
+                break;
+            default:
+                cout << "Invalid choice!" << endl;
+            }
+        } while (choix != 0);
+    }
 }
 
 
@@ -1241,29 +1391,60 @@ void gestionreservation(Hotel& hotel, shared_ptr<Client> client) {
 
     do {
         cout << "\nReservation number to manage (select [0] to exit): ";
-        cin >> numero;
-        cin.ignore();
+        try {
+            cin >> numero;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                continue;
+            }
+            cin.ignore();
+        }
+        catch (...) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input!" << endl;
+            continue;
+        }
 
-        if(numero==0){break;}
+        if (numero == 0) { break; }
 
         reservation = hotel.trouverReservation(numero);
         if (!reservation || reservation->getNumeroClient() != client->getNumeroClient()) {
             cout << "Reservation not found or does not belong to you! Please try again." << endl;
-        } else {
+        }
+        else {
             validReservation = true;
         }
     } while (!validReservation);
 
 
     int choix;
-    do { if(numero==0){break;}
+    do {
+        if (numero == 0) { break; }
         cout << "\n=== Managing reservation " << numero << " ===" << endl;
         cout << "[1] Modify stay period" << endl;
         cout << "[2] Modify room" << endl;
         cout << "[0] Return" << endl;
         cout << "\nChoice: ";
-        cin >> choix;
-        cin.ignore();
+
+        try {
+            cin >> choix;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                continue;
+            }
+            cin.ignore();
+        }
+        catch (...) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input!" << endl;
+            continue;
+        }
 
         switch (choix) {
         case 1: {
@@ -1293,19 +1474,29 @@ void gestionreservation(Hotel& hotel, shared_ptr<Client> client) {
             reservation->setPrixTotal(nouveauPrixTotal);
 
             hotel.sauvegarderReservations();
-            cout << "✓ Stay period modified successfully!" << endl;
+            cout << "Stay period modified successfully!" << endl;
             break;
         }
         case 2: {
             hotel.afficherChambresLibres();
-           auto roomlist=hotel.getChambresLibres();
-             if (roomlist.empty()) {
+            auto roomlist = hotel.getChambresLibres();
+            if (roomlist.empty()) {
                 break;
             }
+
             int nouveauNumeroChambre;
             cout << "New room number: ";
-            cin >> nouveauNumeroChambre;
-            cin.ignore();
+            try {
+                cin >> nouveauNumeroChambre;
+                if (cin.fail()) throw exception();
+                cin.ignore();
+            }
+            catch (...) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                break;
+            }
 
             auto nouvelleChambre = hotel.trouverChambre(nouveauNumeroChambre);
             if (!nouvelleChambre) {
@@ -1334,7 +1525,7 @@ void gestionreservation(Hotel& hotel, shared_ptr<Client> client) {
 
             hotel.sauvegarderReservations();
             hotel.sauvegarderChambres();
-            cout << "✓ Room modified successfully!" << endl;
+            cout << "Room modified successfully!" << endl;
             break;
         }
 
@@ -1353,14 +1544,33 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
         clearScreen();
         cout << "\nWelcome " << *client << "!" << endl;
         afficherMenuClient();
-        cin >> choix;
-        cin.ignore();
+
+        try {
+            cin >> choix;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "\nInvalid input! Please enter a number." << endl;
+                cout << "Press Enter to continue...";
+                cin.get();
+                continue;
+            }
+            cin.ignore();
+        }
+        catch (...) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input!" << endl;
+            cout << "Press Enter to continue...";
+            cin.get();
+            continue;
+        }
 
         switch (choix) {
         case 1: {
             hotel.afficherChambresLibres();
-           auto roomlist=hotel.getChambresLibres();
-             if (roomlist.empty()) {
+            auto roomlist = hotel.getChambresLibres();
+            if (roomlist.empty()) {
                 break;
             }
 
@@ -1368,8 +1578,17 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
             string dateDebut, dateFin;
 
             cout << "\nRoom number: ";
-            cin >> numChambre;
-            cin.ignore();
+            try {
+                cin >> numChambre;
+                if (cin.fail()) throw exception();
+                cin.ignore();
+            }
+            catch (...) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                break;
+            }
 
             auto chambre = hotel.trouverChambre(numChambre);
             if (!chambre) {
@@ -1402,7 +1621,7 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
             hotel.sauvegarderReservations();
             hotel.sauvegarderChambres();
 
-            cout << "\n✓ Reservation created successfully!" << endl;
+            cout << "\nReservation created successfully!" << endl;
             cout << "Reservation number: " << res->getNumeroReservation() << endl;
             cout << "Room: " << numChambre << " [" << chambre->getNomType() << "]" << endl;
             cout << "Period: " << dateDebut << " -> " << dateFin << endl;
@@ -1418,7 +1637,7 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
         }
 
         case 3: {
-           gestionreservation(hotel, client);
+            gestionreservation(hotel, client);
             cout << "\nPress Enter to continue...";
             std::cin.get();
             break;
@@ -1429,11 +1648,21 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
 
             int numReservation;
             cout << "\nReservation number to cancel (select [0] to exit): ";
-            cin >> numReservation;
-            cin.ignore();
+            try {
+                cin >> numReservation;
+                if (cin.fail()) throw exception();
+                cin.ignore();
+            }
+            catch (...) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                break;
+            }
 
-            if(numReservation==0){
-            break;}
+            if (numReservation == 0) {
+                break;
+            }
 
 
             int confirmation;
@@ -1441,8 +1670,17 @@ void menuClient(Hotel& hotel, shared_ptr<Client> client) {
             cout << "[1] Yes, cancel" << endl;
             cout << "[0] No, return" << endl;
             cout << "Choice: ";
-            cin >> confirmation;
-            cin.ignore();
+            try {
+                cin >> confirmation;
+                if (cin.fail()) throw exception();
+                cin.ignore();
+            }
+            catch (...) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                break;
+            }
 
             if (confirmation == 1) {
                 hotel.annulerReservation(numReservation);
@@ -1474,8 +1712,27 @@ void menuStaff(Hotel& hotel, shared_ptr<Staff> staff) {
         clearScreen();
         cout << "\nWelcome " << *staff << " [" << staff->getPoste() << "]" << endl;
         afficherMenuStaff();
-        cin >> choix;
-        cin.ignore();
+
+        try {
+            cin >> choix;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "\nInvalid input! Please enter a number." << endl;
+                cout << "Press Enter to continue...";
+                cin.get();
+                continue;
+            }
+            cin.ignore();
+        }
+        catch (...) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input!" << endl;
+            cout << "Press Enter to continue...";
+            cin.get();
+            continue;
+        }
 
         switch (choix) {
         case 1: {
@@ -1497,11 +1754,24 @@ void menuStaff(Hotel& hotel, shared_ptr<Staff> staff) {
 
             int numeroClient;
             cout << "\nClient number to modify (select [0] to exit): ";
-            cin >> numeroClient;
-            cin.ignore();
+            try {
+                cin >> numeroClient;
+                if (cin.fail()) throw exception();
+                cin.ignore();
+            }
+            catch (...) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                cout << "\nPress Enter to continue...";
+                cin.get();
+                break;
+            }
 
-            if(numeroClient==0){  cout << "\nPress Enter to continue...";
- break;}
+            if (numeroClient == 0) {
+                cout << "\nPress Enter to continue...";
+                break;
+            }
 
             hotel.modifierInformationsClient(numeroClient);
             cout << "\nPress Enter to continue...";
@@ -1514,18 +1784,40 @@ void menuStaff(Hotel& hotel, shared_ptr<Staff> staff) {
 
             int numReservation;
             cout << "\nReservation number to cancel (select [0] to exit): ";
-            cin >> numReservation;
-            cin.ignore();
+            try {
+                cin >> numReservation;
+                if (cin.fail()) throw exception();
+                cin.ignore();
+            }
+            catch (...) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                cout << "\nPress Enter to continue...";
+                cin.get();
+                break;
+            }
 
-            if(numReservation==0){ break;}
+            if (numReservation == 0) { break; }
 
             int confirmation;
             cout << "Are you sure you want to cancel reservation #" << numReservation << "?" << endl;
             cout << "[1] Yes, cancel" << endl;
             cout << "[0] No, return" << endl;
             cout << "Choice: ";
-            cin >> confirmation;
-            cin.ignore();
+            try {
+                cin >> confirmation;
+                if (cin.fail()) throw exception();
+                cin.ignore();
+            }
+            catch (...) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid input!" << endl;
+                cout << "\nPress Enter to continue...";
+                cin.get();
+                break;
+            }
 
             if (confirmation == 1) {
                 hotel.annulerReservation(numReservation);
@@ -1563,8 +1855,26 @@ int main() {
 
     do {
         afficherMenuPrincipal();
-        cin >> choix;
-        cin.ignore();
+        try {
+            cin >> choix;
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "\nInvalid input! Please enter a number." << endl;
+                cout << "Press Enter to continue...";
+                cin.get();
+                continue;
+            }
+            cin.ignore();
+        }
+        catch (...) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "\nInvalid input!" << endl;
+            cout << "Press Enter to continue...";
+            cin.get();
+            continue;
+        }
 
         switch (choix) {
         case 0: {
@@ -1595,14 +1905,23 @@ int main() {
                 auto client = hotel.trouverClientParCIN(cinClient);
 
                 if (!client) {
-                    cout << "\n❌ Client not found!" << endl;
+                    cout << "\nClient not found!" << endl;
                     cout << "\n[1] Try again" << endl;
                     cout << "[2] Create new account" << endl;
                     cout << "[0] Return to main menu" << endl;
                     cout << "\nChoice: ";
                     int choixClient;
-                    cin >> choixClient;
-                    cin.ignore();
+                    try {
+                        cin >> choixClient;
+                        if (cin.fail()) throw exception();
+                        cin.ignore();
+                    }
+                    catch (...) {
+                        cin.clear();
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        cout << "Invalid input!" << endl;
+                        continue;
+                    }
 
                     if (choixClient == 2) {
                         clearScreen();
@@ -1614,6 +1933,16 @@ int main() {
                         getline(std::cin, prenom);
                         cout << "CIN: ";
                         getline(std::cin, cinNew);
+
+                        // Check if CIN already exists
+                        if (hotel.trouverClientParCIN(cinNew)) {
+                            cout << "\nThis CIN already exists in the system!" << endl;
+                            cout << "Please use a different CIN or login with the existing account." << endl;
+                            cout << "\nPress Enter to continue...";
+                            std::cin.get();
+                            continue;
+                        }
+
                         cout << "Phone: ";
                         getline(std::cin, tel);
                         cout << "Password: ";
@@ -1621,7 +1950,7 @@ int main() {
 
                         auto nouveauClient = make_shared<Client>(nom, prenom, cinNew, tel, mdp);
                         hotel.ajouterClient(nouveauClient);
-                        cout << "\n✓ Account created successfully!" << endl;
+                        cout << "\nAccount created successfully!" << endl;
                         cout << "Your CIN is: " << cinNew << endl;
                         cout << "\nPress Enter to login...";
                         std::cin.get();
@@ -1659,8 +1988,19 @@ int main() {
                 cout << endl;
 
                 cout << "Staff ID: ";
-                cin >> idStaff;
-                cin.ignore();
+                try {
+                    cin >> idStaff;
+                    if (cin.fail()) throw exception();
+                    cin.ignore();
+                }
+                catch (...) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid input!" << endl;
+                    cout << "\nPress Enter to continue...";
+                    cin.get();
+                    continue;
+                }
 
                 cout << "Password: ";
                 getline(cin, motDePasse);
@@ -1675,8 +2015,16 @@ int main() {
                     cout << "[0] Return to main menu" << endl;
                     cout << "\nChoice: ";
                     int choixRetry;
-                    cin >> choixRetry;
-                    cin.ignore();
+                    try {
+                        cin >> choixRetry;
+                        if (cin.fail()) throw exception();
+                        cin.ignore();
+                    }
+                    catch (...) {
+                        cin.clear();
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        continue;
+                    }
 
                     if (choixRetry == 0) {
                         break;
@@ -1688,7 +2036,7 @@ int main() {
 
         default:
             clearScreen();
-            cout << "\n❌ Invalid choice!" << endl;
+            cout << "\nInvalid choice!" << endl;
             cout << "\nPress Enter to continue...";
             std::cin.get();
         }

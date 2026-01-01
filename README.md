@@ -1,101 +1,103 @@
-# hotelCpp
-PLAN DU PROJET C++:
+#Hotel Management System (C++ OOP)
 
-constructeur+ destructeur -> methode new/delete (allocation dynamique).
+#Description
 
-
-LES CLASSES :
-https://emsiedu-my.sharepoint.com/:i:/g/personal/mohamedhamza_halouani_emsi-edu_ma/EVYkHa3KUU5BhQqDhU-FGyYBWAVK1eeo6rRr7mVQl5I-Cw?e=rdiXcJ
-
-https://emsiedu-my.sharepoint.com/:i:/g/personal/mohamedhamza_halouani_emsi-edu_ma/EWT2DgMp13JNqUr-0o_lAikBF4Fj-ApMV0XZDx_LXUd32w?e=hMVF2F
-
-https://emsiedu-my.sharepoint.com/:w:/g/personal/mohamedhamza_halouani_emsi-edu_ma/EayZaY5iHHdEjpGdxj2mYUsBa5LSINZWVxXYwFDeNSpfxQ?e=KiCQbg
-
-personne(int age, string nom) : client(string CIN), staff(string poste, double salaire)
-
-chambre (int numero,bool estOccupe,double prixBase):ChambreSimple(double pourcentage), doublee(double pourcentage), suite(double pourcentage)
-
-// class pour stocker et gérer toutes les données du système
-hotel (
-vector<Chambre*> chambres
-vector<Client> clients
-vector<Employe> employes
-vector<Reservation> reservations)
-
-reservation(int idReservation,string client,Chambre* chambre,string dateDebut,string dateFin,double prixTotal)
+#Features
 
 
-methodes:
-getfromfile();
-loadfromfile();
-facture();
-afficher();
-afficher_liste_des_chambre()
+Account Locking: Clients are automatically blocked after 5 failed login attempts to prevent unauthorized access.
 
-libraries :
-include <chrono>; (pour calculer les nombres de nuit entre deux dates )
+Dynamic Room Management: * Supports multiple room types (Single, Double, Suite, Deluxe, Presidential, Royal Suite).
 
+Calculates real-time pricing based on a base rate plus a percentage modifier.
 
-=================================================================
+Reservation System: * Automated duration calculation between two dates.
 
-Gestion d'hotelerie
-username
-password
-welcome $user
+Tracks room occupancy and links reservations to specific client IDs.
 
+Persistent Storage: * Automated data saving and loading using text files (clients.txt, chambres.txt, staff.txt, reservations.txt).
 
-// ========================= MENU CLIENT =========================
-// Ce menu permet aux clients de l’hôtel de gérer tout le cycle de vie de leur réservation.
+Uses a custom pipe-separated (|) serialization format.
 
+#Technologies
+Language: C++
 
-[1] Saisie d’une demande de réservation      
-// → Créer une nouvelle demande de réservation.
-//   Le système collectera les informations du client, les dates, le type de chambre, etc.
+Library Focus: fstream (File I/O), vector (Dynamic collections), algorithm, and sstream (Data parsing).
 
-[2] Visualisation du dossier de réservation  
-// → Afficher toutes les données enregistrées liées à une réservation existante.
-//   Utilisé pour vérifier les dates, les détails de la chambre et les informations du client.
+#Architecture Overview
+The project follows a modular hierarchy:
 
-[3] Actualisation d’une réservation        
-// → Modifier une réservation existante (changer dates, type de chambre, etc.)
-//   Applique des règles de validation (disponibilité, vérification des dates, etc.)
+Personne (Abstract Base): Inherited by Client and Staff.
 
-[4] Procédure d’annulation de réservation    
-// → Annuler une réservation existante.
-//   Le système met à jour les disponibilités et supprime ou marque la réservation.
+Chambre (Abstract Base): Inherited by specific room types with unique base prices.
 
-[0] Retour module principal                
-// → Revenir au menu principal du système (menu racine).
+Hotel (Manager Class): The "Controller" that handles all logic, file processing, and data vectors.
+
+#How to Run
+
+Bash
+g++ main.cpp -o hotel
+Execute:
+Bash
+./hotel
 
 
+# Hotel Management System (C++)
 
-// ========================== MENU STAFF =========================
-// Ce menu est utilisé par le personnel de l’hôtel pour gérer les données opérationnelles.
-// Le personnel a accès à des fonctions administratives non accessibles aux clients.
+> A comprehensive C++ console application built on Object-Oriented Programming principles. It manages the lifecycle of hotel operations including secure client authentication, dynamic room pricing, and staff-level administrative controls.
 
 
-[1] Création d’une unité d’hébergement       
-// → Créer une nouvelle chambre dans le système (Chambre Simple, Double, Suite...)
-//   Le personnel saisit le numéro de chambre, la capacité, le prix de base et le type.
+---
 
-[2] Gestion d’une unité d’hébergement       
-// → Modifier ou gérer les chambres existantes : changer le prix, l’état, le type, etc.
+## 📌 Overview
 
-[3] Mise à jour des données clients          
-// → Modifier les informations des clients stockées dans la base de données (nom, CIN, etc.)
+This project is a **C++ hotel management system** designed to manage clients, staff, and rooms while enforcing authentication rules and data persistence.  
+It is structured for **readability, maintainability, and academic evaluation**.
 
-[4] Gestion des réservations                 
-// → Gestion des réservations par le personnel.
-//   Permet de rechercher, modifier, valider ou supprimer des réservations.
+The system separates responsibilities clearly and documents intent at every level (files, classes, and functions).
 
-[5] Gestion des ressources humaines          
-// → Gérer les données du personnel (liste des employés, rôles, horaires, etc.)
+---
 
-[6] Paramétrage de la tarification hôtelière
-// → Ajuster les règles de tarification, les prix saisonniers, remises, taxes, etc.
+## ✨ Features
 
-[0] Retour module principal                  
-// → Revenir au menu principal de l’application.
+- Client authentication using **CIN + password**
+- **Account lock** after 5 failed login attempts
+- Staff-only permissions to modify client data
+- Persistent storage using human-readable text files
+- Modular C++ design (classes, inheritance, polymorphism)
+- Fully documented using industry-style comments
 
+---
+
+## 🗂 Project Structure
+
+.
+├── main.cpp                # Application entry point
+├── clients.txt             # Persistent client storage
+├── staff.txt               # Persistent staff storage
+├── chambres.txt             # Persistent rooms storage
+├── reservations.txt         # Persistent reservations storage
+└── README.md               # Project documentation
+
+
+## ▶ How to Run
+
+### 1️⃣ Prerequisites
+
+Make sure you have the following installed on your system:
+
+- **GCC / G++** (version supporting C++17 or later)
+- A terminal (Linux, macOS, or Windows with MinGW / WSL)
+
+To verify your compiler version:
+
+```bash
+g++ --version
+
+# Compile the Project
+- g++ main.cpp -o hotel
+
+# Run the Application
+- ./hotel
 
 
