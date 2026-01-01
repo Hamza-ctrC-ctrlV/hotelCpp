@@ -27,7 +27,6 @@ The system separates responsibilities clearly and documents intent at every leve
 
 ## 🗂 Project Structure
 
-```text
 .
 ├── main.cpp                # Application entry point
 ├── clients.txt             # Persistent client storage
@@ -40,7 +39,6 @@ The system separates responsibilities clearly and documents intent at every leve
 
 ## ▶ How to Run
 
-### 1️⃣ Prerequisites
 
 Make sure you have the following installed on your system:
 
