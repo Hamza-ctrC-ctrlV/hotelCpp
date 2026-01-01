@@ -36,6 +36,7 @@ The system separates responsibilities clearly and documents intent at every leve
 ├── reservations.txt        # Persistent reservations storage
 └── README.md               # Project documentation
 
+---
 
 ## ▶ How to Run
 
