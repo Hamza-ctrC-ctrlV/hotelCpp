@@ -45,15 +45,18 @@ Make sure you have the following installed on your system:
 - **GCC / G++** (version supporting C++17 or later)
 - A terminal (Linux, macOS, or Windows with MinGW / WSL)
 
-To verify your compiler version:
-
+# To verify your compiler version:
 ```bash
 g++ --version
+```
 
 # Compile the Project
+```bash
 - g++ main.cpp -o hotel
+```
 
 # Run the Application
+```bash
 - ./hotel
 
 
