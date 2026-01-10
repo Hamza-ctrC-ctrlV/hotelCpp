@@ -1,2 +1,6 @@
-1|laarbi|thami|k11111|0606060606
-
+# CLIENTS DATA FILE
+# Client ID|surname|name|cin|phone number|password|failed attempts|active account
+1|hamza|halouani|k6434343|545454545|hamza123|0|Yes
+2|hamza|halouani|k600099|323232323232|hamza123|0|Yes
+3|test|test|k600|088877722|test123|3|No
+4|test|test|k6000|767676|test123|0|Yes

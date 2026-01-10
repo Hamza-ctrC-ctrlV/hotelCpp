@@ -1,2 +1,3 @@
-1|Admin|User|ADMIN001|0600000000|Manager|admin123
-2|John|Doe|STAFF001|0611111111|Receptionist|pass123
+# STAFF DATA FILE
+# Staff ID|surname|name|cin|phone number|position|password
+1|admin|admin|k6000|060606606060|manager|admin123

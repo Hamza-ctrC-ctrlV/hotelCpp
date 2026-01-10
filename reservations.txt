@@ -1,0 +1,2 @@
+# RESERVATIONS DATA FILE
+# Reservation ID|Client ID|Room number|start date|end date|number of days|total price

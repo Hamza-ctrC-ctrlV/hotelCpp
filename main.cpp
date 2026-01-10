@@ -146,7 +146,7 @@ public:
 
         auto client = make_shared<Client>(nom, prenom, cin, tel, mdp,
             stoi(tentStr), (actifStr == "Yes"));
-        
+
         // Update static counter to avoid ID conflicts
         if (stoi(numStr) > compteurClients) {
             compteurClients = stoi(numStr);
@@ -218,7 +218,7 @@ public:
         getline(ss, mdp, '|');
 
         auto staff = make_shared<Staff>(nom, prenom, cin, tel, post, mdp);
-        
+
         // Update static counter to avoid ID conflicts
         if (stoi(idStr) > compteurStaff) {
             compteurStaff = stoi(idStr);
@@ -245,19 +245,19 @@ int calculerNombreJours(const string& dateDebut, const string& dateFin) {
         int jour1, mois1, annee1;
         int jour2, mois2, annee2;
         char slash;
-        
+
         // Parse start date
         stringstream ss1(dateDebut);
         ss1 >> jour1 >> slash >> mois1 >> slash >> annee1;
-        
+
         // Parse end date
         stringstream ss2(dateFin);
         ss2 >> jour2 >> slash >> mois2 >> slash >> annee2;
-        
+
         // Simple date calculation (approximation: 30 days/month, 365 days/year)
         int totalDays1 = annee1 * 365 + mois1 * 30 + jour1;
         int totalDays2 = annee2 * 365 + mois2 * 30 + jour2;
-        
+
         // Validate date range
         if (totalDays2 < totalDays1) {
             throw logic_error("End date cannot be before start date.");
@@ -536,7 +536,7 @@ private:
     vector<shared_ptr<Staff>> staffMembers;         // All staff members
     vector<shared_ptr<Client>> clients;             // All registered clients
     vector<shared_ptr<Reservation>> reservations;   // All reservations
-    
+
     // File paths for data persistence
     const string FICHIER_RESERVATIONS = "reservations.txt";
     const string FICHIER_CHAMBRES = "chambres.txt";
@@ -556,7 +556,7 @@ public:
     // DATA LOADING METHODS
     // Load data from text files into memory
     // ========================================================================
-    
+
     // Load staff members from file
     void chargerStaff() {
         ifstream file(FICHIER_STAFF.c_str());
@@ -670,7 +670,7 @@ public:
     // DATA SAVING METHODS
     // Persist data from memory to text files
     // ========================================================================
-    
+
     // Save staff members to file
     void sauvegarderStaff() {
         ofstream file(FICHIER_STAFF.c_str());
@@ -729,7 +729,7 @@ public:
     // DATA MANIPULATION METHODS
     // Add new entities to the system
     // ========================================================================
-    
+
     // Add a new client and save immediately
     void ajouterClient(shared_ptr<Client> c) {
         clients.push_back(c);
@@ -757,7 +757,7 @@ public:
     // DISPLAY METHODS
     // Show various lists and information to users
     // ========================================================================
-    
+
     // Display all available (unoccupied) rooms
     void afficherChambresLibres() const {
         cout << "\n=== Available Rooms ===" << endl;
@@ -839,7 +839,7 @@ public:
     // SEARCH METHODS
     // Find specific entities in the system
     // ========================================================================
-    
+
     // Find a room by its number
     shared_ptr<Chambre> trouverChambre(int numero) const {
         auto it = find_if(chambres.begin(), chambres.end(),
@@ -903,7 +903,7 @@ public:
     // RESERVATION MANAGEMENT METHODS
     // Handle reservation operations
     // ========================================================================
-    
+
     // Cancel a reservation and free the associated room
     bool annulerReservation(int numeroReservation) {
         auto res = trouverReservation(numeroReservation);
@@ -939,7 +939,7 @@ public:
     // ROOM PRICING MANAGEMENT METHODS
     // Modify room prices and percentages
     // ========================================================================
-    
+
     // Modify the percentage adjustment for a room's price
     bool modifierPourcentage(int numero, double nouveauPourcentage) {
         auto chambre = trouverChambre(numero);
@@ -978,7 +978,7 @@ public:
     // CLIENT MANAGEMENT METHODS
     // Handle client information modifications
     // ========================================================================
-    
+
     // Interactive menu to modify client information
     // Staff can update name, CIN, phone, password, and account status
     bool modifierInformationsClient(int numeroClient) {
@@ -1091,7 +1091,7 @@ public:
     // AUTHENTICATION METHODS
     // Handle login for clients and staff with security features
     // ========================================================================
-    
+
     // Client login with password verification and attempt tracking
     // Blocks account after 5 failed attempts for security
     shared_ptr<Client> connexionClientAvecMotDePasse(string cin, string motDePasse) {
@@ -1159,7 +1159,7 @@ public:
     // STAFF MANAGEMENT METHODS
     // Handle staff member information modifications (HR functions)
     // ========================================================================
-    
+
     // Human Resources Management: Modify staff member details
     // Requires password verification to access staff record
     void HumanRessourcesManagement(shared_ptr<Staff> staff) {
@@ -1509,8 +1509,8 @@ void menuGestionChambre(Hotel& hotel) {
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 cout << "Invalid input!" << endl;
-                system("pause"); 
-                continue; 
+                system("pause");
+                continue;
             }
             cin.ignore();
         }
@@ -1522,14 +1522,14 @@ void menuGestionChambre(Hotel& hotel) {
             continue;
         }
         if (numero == 0) {
-            return; 
+            return;
         }
 
         auto chambre = hotel.trouverChambre(numero);
         if (!chambre) {
             cout << "Room not found!" << endl;
-            system("pause"); 
-            continue; 
+            system("pause");
+            continue;
         }
         int choix;
         do {
@@ -2144,7 +2144,7 @@ int main() {
             string cinClient;
             string motDePasse;
 
-            bool passwordCorrect = false; 
+            bool passwordCorrect = false;
             bool loginSuccess = false;
 
             while (!loginSuccess) {
@@ -2178,7 +2178,9 @@ int main() {
                         cout << "Invalid input!" << endl;
                         continue;
                     }
-                    
+                    if (choixClient == 0) {
+                        break;
+                    }
                     continue;
                 }
                 bool passwordCorrect = false;
@@ -2226,7 +2228,7 @@ int main() {
             getline(std::cin, prenom);
             cout << "CIN: ";
             getline(std::cin, cinNew);
-            
+
             // Check for duplicate CIN
             if (hotel.trouverClientParCIN(cinNew)) {
                 cout << "\nThis CIN already exists in the system!" << endl;
@@ -2248,7 +2250,7 @@ int main() {
             cout << "Your CIN is: " << cinNew << endl;
             cout << "\nPress Enter to login...";
             std::cin.get();
-            break; 
+            break;
         }
 
         case 3: {
