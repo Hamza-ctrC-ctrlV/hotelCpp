@@ -105,7 +105,7 @@ public:
     void setMotDePasse(string mdp) { motDePasse = mdp; }
     void setCompteActif(bool actif) { compteActif = actif; }
 
-    // Increment failed login attempts; block account after 5 attempts
+    // Increment failed login attempts; block account after 3 attempts
     void incrementerTentatives() {
         tentativesEchouees++;
         if (tentativesEchouees >= 3) {
@@ -356,7 +356,7 @@ public:
 // ============================================================================
 // ROOM TYPE CLASSES
 // Concrete implementations of different room types with default pricing
-// Each class represents a specific category of accommodation
+// Each class represents a specific category of Residence
 // ============================================================================
 
 // Single Room: Basic room for one person (300 DH default)
@@ -386,7 +386,7 @@ public:
     string getNomType() const override { return "Suite"; }
 };
 
-// Deluxe Room: Premium accommodation (1000 DH default)
+// Deluxe Room: Premium Residence (1000 DH default)
 class ChambreDeluxe : public Chambre {
 public:
     ChambreDeluxe(int numero, float prixbase = 1000.0, double pourcentage = 0.0, bool estOccupee = false)
@@ -404,7 +404,7 @@ public:
     string getNomType() const override { return "Presidential"; }
 };
 
-// Royal Suite: Ultimate luxury accommodation (2000 DH default)
+// Royal Suite: Ultimate luxury Residence (2000 DH default)
 class ChambreSuiteRoyal : public Chambre {
 public:
     ChambreSuiteRoyal(int numero, float prixbase = 2000.0, double pourcentage = 0.0, bool estOccupee = false)
@@ -448,7 +448,7 @@ public:
 
     // Display reservation summary with client information
     void afficher(const Client& c) const {
-        cout << "Res #" << numeroReservation
+        cout << "Reservation #" << numeroReservation
             << " | Guest: " << c.getNom() << " " << c.getPrenom()
             << " | Room " << numeroChambre
             << " | " << dateDebut << " -> " << dateFin
@@ -1307,14 +1307,8 @@ void clearScreen() {
 #ifdef _WIN32
     system("cls");  // Windows command
 #else
-    system("clear"); // Unix/Linux/Mac command
+    system("clear"); // Linux/Mac command
 #endif
-}
-
-// Print centered text for menu headers
-void printCentered(const string& text, int width = 80) {
-    int padding = (width - text.length()) / 2;
-    cout << string(padding, ' ') << text << endl;
 }
 
 // Print a line of characters (decoration)
@@ -1332,8 +1326,8 @@ void afficherMenuPrincipal() {
     clearScreen();
     cout << endl;
     printLine();
-    printCentered("HOTEL MANAGEMENT SYSTEM");
-    printCentered("VERSION 2.0");
+    cout << "                          HOTEL MANAGEMENT SYSTEM" << endl;
+    cout << "                          VERSION 2.0" << endl;
     printLine();
     cout << endl;
     cout << "                          [1] Client Login" << endl;
@@ -1342,16 +1336,15 @@ void afficherMenuPrincipal() {
     cout << "                          [0] Exit" << endl;
     cout << endl;
     printLine();
-    cout << "\n";
-    printCentered("Choice: ", 40);
-    cout << "                                        ";
+    printLine();
+    cout << "\nChoice: ";
 }
 
 // Display menu options for authenticated clients
 void afficherMenuClient() {
     cout << endl;
     printLine();
-    printCentered("CLIENT MENU");
+    cout << "                          CLIENT MENU" << endl;
     printLine();
     cout << endl;
     cout << "                          [1] Reservation Request Entry" << endl;
@@ -1368,7 +1361,7 @@ void afficherMenuClient() {
 void afficherMenuStaff() {
     cout << endl;
     printLine();
-    printCentered("STAFF MENU");
+    cout << "                          STAFF MENU" << endl;
     printLine();
     cout << endl;
     cout << "                          [1] Create Residence Unit" << endl;
@@ -1386,7 +1379,7 @@ void afficherMenuStaff() {
 void fonctionnaliteSousDevelloppement() {
     cout << "\n";
     printLine('*');
-    printCentered("FUNCTIONALITY UNDER DEVELOPMENT");
+    cout << "                          FUNCTIONALITY UNDER DEVELOPMENT" << endl;
     printLine('*');
     cout << "\nPress Enter to continue...";
     cin.get();
@@ -1401,7 +1394,7 @@ void fonctionnaliteSousDevelloppement() {
 // Staff can add multiple rooms of different types
 void menuCreationChambre(Hotel& hotel) {
     clearScreen();
-    cout << "\n=== Create Accommodation Unit ===" << endl;
+    cout << "\n=== Create Residence Unit ===" << endl;
 
     int numero;
     float prixBase;
@@ -2151,7 +2144,7 @@ int main() {
                 clearScreen();
                 cout << endl;
                 printLine();
-                printCentered("CLIENT LOGIN");
+                cout << "                          CLIENT LOGIN" << endl;
                 printLine();
                 cout << endl;
 
@@ -2264,7 +2257,7 @@ int main() {
                 clearScreen();
                 cout << endl;
                 printLine();
-                printCentered("STAFF LOGIN");
+                cout << "                          STAFF LOGIN" << endl;
                 printLine();
                 cout << endl;
 
