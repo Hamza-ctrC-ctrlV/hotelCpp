@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <stdexcept>
 using namespace std;
 
 // ============================================================================
@@ -241,38 +242,33 @@ void clearScreen();
 // Throws: logic_error for invalid date ranges, runtime_error for format errors
 // ============================================================================
 int calculerNombreJours(const string& dateDebut, const string& dateFin) {
-    try {
-        int jour1, mois1, annee1;
-        int jour2, mois2, annee2;
-        char slash;
+    int jour1 = 0, mois1 = 0, annee1 = 0;
+    int jour2 = 0, mois2 = 0, annee2 = 0;
+    char slash1, slash2;
 
-        // Parse start date
-        stringstream ss1(dateDebut);
-        ss1 >> jour1 >> slash >> mois1 >> slash >> annee1;
-
-        // Parse end date
-        stringstream ss2(dateFin);
-        ss2 >> jour2 >> slash >> mois2 >> slash >> annee2;
-
-        // Simple date calculation (approximation: 30 days/month, 365 days/year)
-        int totalDays1 = annee1 * 365 + mois1 * 30 + jour1;
-        int totalDays2 = annee2 * 365 + mois2 * 30 + jour2;
-
-        // Validate date range
-        if (totalDays2 < totalDays1) {
-            throw logic_error("End date cannot be before start date.");
-        }
-        if (totalDays2 == totalDays1) {
-            throw logic_error("Stay must be at least one night.");
-        }
-        return totalDays2 - totalDays1;
+    // 1. Try to parse Start Date
+    stringstream ss1(dateDebut);
+    if (!(ss1 >> jour1 >> slash1 >> mois1 >> slash2 >> annee1) || slash1 != '/' || slash2 != '/') {
+        cout << "Error: Invalid start date format (use dd/mm/yyyy)" << endl;
+        return 0; 
     }
-    catch (const logic_error& e) {
-        throw; // Re-throw logic errors
+
+    // 2. Try to parse End Date
+    stringstream ss2(dateFin);
+    if (!(ss2 >> jour2 >> slash1 >> mois2 >> slash2 >> annee2) || slash1 != '/' || slash2 != '/') {
+        cout << "Error: Invalid end date format (use dd/mm/yyyy)" << endl;
+        return 0; 
     }
-    catch (const exception& e) {
-        throw runtime_error("Invalid date format (use dd/mm/yyyy)");
+
+    long long totalDays1 = annee1 * 365 + mois1 * 30 + jour1;
+    long long totalDays2 = annee2 * 365 + mois2 * 30 + jour2;
+
+    if (totalDays2 <= totalDays1) {
+        cout << "Error: End date must be after start date." << endl;
+        return 0; 
     }
+
+    return (int)(totalDays2 - totalDays1);
 }
 
 // ============================================================================
